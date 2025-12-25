@@ -58,65 +58,94 @@ end)
 
 local MainTab = Window:CreateTab("Main", 4483362458)
 
--- Toggle Auto Index Rare Eggs
+-- Toggle
 local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto Index Rare Eggs",
     CurrentValue = false,
     Flag = "AutoIndexRareEggs",
-    Callback = function(Value)
-        -- Rien à mettre ici, la boucle principale gère l'activation/désactivation
-    end,
+    Callback = function() end
 })
 
--- Boucle principale pour chercher et indexer les œufs
-spawn(function()
-    local Players = game:GetService("Players")
-    local player = Players.LocalPlayer
-    local RunService = game:GetService("RunService")
-    
-    -- Fonction pour récupérer le personnage
-    local function getCharacter()
-        return player.Character or player.CharacterAdded:Wait()
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
+
+-- EggInfo (source officielle des classes)
+local EggInfo = require(ReplicatedStorage.Modules.EggInfo)
+
+-- Classes à ignorer
+local IgnoredClasses = {
+    Common = true,
+    Uncommon = true,
+    Rare = true,
+    Epic = true
+}
+
+-- Character helper
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+-- Récupérer la classe depuis EggInfo
+local function getEggClass(eggName)
+    for _, info in pairs(EggInfo) do
+        if info.Name == eggName then
+            return info.Class
+        end
     end
-    
+end
+
+-- Boucle principale
+task.spawn(function()
     while true do
         if AutoIndexToggle.CurrentValue then
             local character = getCharacter()
-            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-            
+            local hrp = character:WaitForChild("HumanoidRootPart")
+
             local eggsFolder = workspace:FindFirstChild("Eggs")
-            local indexArea = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Index") and workspace.Map.Index:FindFirstChild("IndexArea")
-            
+            local indexArea = workspace.Map and workspace.Map.Index and workspace.Map.Index:FindFirstChild("IndexArea")
+
             if eggsFolder and indexArea then
-                for _, egg in pairs(eggsFolder:GetChildren()) do
-                    -- Vérifier si c'est un model ou mesh
+                for _, egg in ipairs(eggsFolder:GetChildren()) do
                     if egg:IsA("Model") or egg:IsA("MeshPart") then
-                        -- Récupérer la classe de l'œuf
-                        local eggClass = egg:FindFirstChild("Class") and egg.Class.Value or egg:GetAttribute("Class")
-                        
-                        -- Ignorer Common, Uncommon, Rare et Epic
-                        if eggClass and not (eggClass == "Common" or eggClass == "Uncommon" or eggClass == "Rare" or eggClass == "Epic") then
-                            -- Détecter le ClickDetector
-                            local click = egg:FindFirstChildWhichIsA("ClickDetector")
-                            if click then
-                                -- "Cliquer" sur l'œuf
-                                click:FireServer()
-                            end
-                            
-                            -- Déplacer l'œuf dans l'IndexArea
+                        local eggName = egg.Name
+                        local eggClass = getEggClass(eggName)
+
+                        -- Ignore les classes basiques
+                        if eggClass and not IgnoredClasses[eggClass] then
+                            -- Trouver la position de l'œuf
+                            local eggCFrame
                             if egg:IsA("Model") then
-                                egg:SetPrimaryPartCFrame(indexArea.CFrame + Vector3.new(0, 3, 0))
-                            elseif egg:IsA("MeshPart") then
-                                egg.CFrame = indexArea.CFrame + Vector3.new(0, 3, 0)
+                                local primary = egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart")
+                                if not primary then continue end
+                                eggCFrame = primary.CFrame
+                            else
+                                eggCFrame = egg.CFrame
                             end
-                            
-                            break -- Prend un œuf à la fois
+
+                            -- TP sur l'œuf
+                            hrp.CFrame = eggCFrame + Vector3.new(0, 3, 0)
+                            task.wait(0.1)
+
+                            -- Click instant (ignore distance)
+                            local click = egg:FindFirstChildWhichIsA("ClickDetector", true)
+                            if click then
+                                fireclickdetector(click)
+                            end
+
+                            task.wait(0.1)
+
+                            -- TP vers l'Index
+                            hrp.CFrame = indexArea.CFrame + Vector3.new(0, 3, 0)
+
+                            break -- 1 œuf à la fois
                         end
                     end
                 end
             end
         end
-        
-        task.wait(0.3) -- pause pour éviter de surcharger
+
+        task.wait(0.3)
     end
 end)
