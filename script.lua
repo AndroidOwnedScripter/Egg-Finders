@@ -58,7 +58,6 @@ end)
 
 local MainTab = Window:CreateTab("Main", 4483362458)
 
--- Toggle
 local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto Index Rare Eggs",
     CurrentValue = false,
@@ -71,10 +70,10 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
--- EggInfo (source officielle des classes)
+-- EggInfo
 local EggInfo = require(ReplicatedStorage.Modules.EggInfo)
 
--- Classes à ignorer
+-- Classes ignorées
 local IgnoredClasses = {
     Common = true,
     Uncommon = true,
@@ -82,16 +81,14 @@ local IgnoredClasses = {
     Epic = true
 }
 
--- Character helper
 local function getCharacter()
     return player.Character or player.CharacterAdded:Wait()
 end
 
--- Récupérer la classe depuis EggInfo
-local function getEggClass(eggName)
-    for _, info in pairs(EggInfo) do
-        if info.Name == eggName then
-            return info.Class
+local function getEggClass(name)
+    for _, egg in pairs(EggInfo) do
+        if egg.Name == name then
+            return egg.Class
         end
     end
 end
@@ -100,8 +97,8 @@ end
 task.spawn(function()
     while true do
         if AutoIndexToggle.CurrentValue then
-            local character = getCharacter()
-            local hrp = character:WaitForChild("HumanoidRootPart")
+            local char = getCharacter()
+            local hrp = char:WaitForChild("HumanoidRootPart")
 
             local eggsFolder = workspace:FindFirstChild("Eggs")
             local indexArea = workspace.Map and workspace.Map.Index and workspace.Map.Index:FindFirstChild("IndexArea")
@@ -109,35 +106,33 @@ task.spawn(function()
             if eggsFolder and indexArea then
                 for _, egg in ipairs(eggsFolder:GetChildren()) do
                     if egg:IsA("Model") or egg:IsA("MeshPart") then
-                        local eggName = egg.Name
-                        local eggClass = getEggClass(eggName)
+                        local eggClass = getEggClass(egg.Name)
 
-                        -- Ignore les classes basiques
                         if eggClass and not IgnoredClasses[eggClass] then
-                            -- Trouver la position de l'œuf
-                            local eggCFrame
+                            -- Trouver la part physique de l'œuf
+                            local eggPart
                             if egg:IsA("Model") then
-                                local primary = egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart")
-                                if not primary then continue end
-                                eggCFrame = primary.CFrame
+                                eggPart = egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart", true)
                             else
-                                eggCFrame = egg.CFrame
+                                eggPart = egg
                             end
+                            if not eggPart then continue end
 
                             -- TP sur l'œuf
-                            hrp.CFrame = eggCFrame + Vector3.new(0, 3, 0)
-                            task.wait(0.1)
+                            hrp.CFrame = eggPart.CFrame + Vector3.new(0, 3, 0)
+                            task.wait(0.15)
 
-                            -- Click instant (ignore distance)
-                            local click = egg:FindFirstChildWhichIsA("ClickDetector", true)
-                            if click then
-                                fireclickdetector(click)
-                            end
+                            -- CLICK PHYSIQUE (FIABLE)
+                            firetouchinterest(hrp, eggPart, 0)
+                            firetouchinterest(hrp, eggPart, 1)
 
-                            task.wait(0.1)
+                            task.wait(0.2)
 
                             -- TP vers l'Index
                             hrp.CFrame = indexArea.CFrame + Vector3.new(0, 3, 0)
+
+                            -- ⏱️ DÉLAI DEMANDÉ (1 SECONDE)
+                            task.wait(1)
 
                             break -- 1 œuf à la fois
                         end
@@ -149,3 +144,4 @@ task.spawn(function()
         task.wait(0.3)
     end
 end)
+
