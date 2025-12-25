@@ -85,10 +85,11 @@ local function getCharacter()
     return player.Character or player.CharacterAdded:Wait()
 end
 
-local function getEggClass(name)
-    for _, egg in pairs(EggInfo) do
-        if egg.Name == name then
-            return egg.Class
+-- Récupérer la classe depuis EggInfo
+local function getEggClass(eggName)
+    for _, info in pairs(EggInfo) do
+        if info.Name == eggName then
+            return info.Class
         end
     end
 end
@@ -101,7 +102,9 @@ task.spawn(function()
             local hrp = char:WaitForChild("HumanoidRootPart")
 
             local eggsFolder = workspace:FindFirstChild("Eggs")
-            local indexArea = workspace.Map and workspace.Map.Index and workspace.Map.Index:FindFirstChild("IndexArea")
+            local indexArea = workspace.Map
+                and workspace.Map:FindFirstChild("Index")
+                and workspace.Map.Index:FindFirstChild("IndexArea")
 
             if eggsFolder and indexArea then
                 for _, egg in ipairs(eggsFolder:GetChildren()) do
@@ -109,7 +112,7 @@ task.spawn(function()
                         local eggClass = getEggClass(egg.Name)
 
                         if eggClass and not IgnoredClasses[eggClass] then
-                            -- Trouver la part physique de l'œuf
+                            -- Trouver la part principale
                             local eggPart
                             if egg:IsA("Model") then
                                 eggPart = egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart", true)
@@ -118,20 +121,26 @@ task.spawn(function()
                             end
                             if not eggPart then continue end
 
-                            -- TP sur l'œuf
-                            hrp.CFrame = eggPart.CFrame + Vector3.new(0, 3, 0)
+                            -- 🔍 Chercher le ClickDetector PARTOUT dans l'œuf
+                            local clickDetector = egg:FindFirstChildWhichIsA("ClickDetector", true)
+                            if not clickDetector then
+                                warn("Aucun ClickDetector trouvé pour :", egg.Name)
+                                continue
+                            end
+
+                            -- 🚀 TP sur l'œuf
+                            hrp.CFrame = eggPart.CFrame + Vector3.new(0, 2.5, 0)
                             task.wait(0.15)
 
-                            -- CLICK PHYSIQUE (FIABLE)
-                            firetouchinterest(hrp, eggPart, 0)
-                            firetouchinterest(hrp, eggPart, 1)
+                            -- 🖱️ CLICK
+                            fireclickdetector(clickDetector)
 
                             task.wait(0.2)
 
-                            -- TP vers l'Index
+                            -- 📍 TP vers l'Index
                             hrp.CFrame = indexArea.CFrame + Vector3.new(0, 3, 0)
 
-                            -- ⏱️ DÉLAI DEMANDÉ (1 SECONDE)
+                            -- ⏱️ DELAY demandé
                             task.wait(1)
 
                             break -- 1 œuf à la fois
@@ -144,4 +153,3 @@ task.spawn(function()
         task.wait(0.3)
     end
 end)
-
