@@ -7,7 +7,7 @@ local Window = Rayfield:CreateWindow({
     Name = "Egg Finders",
     Icon = 0,
     LoadingTitle = "Egg Finders",
-    LoadingSubtitle = "by someone",
+    LoadingSubtitle = "AndroidOwnedScripter",
     ShowText = "Rayfield",
     Theme = "Default",
     ToggleUIKeybind = "K",
@@ -18,7 +18,6 @@ local Window = Rayfield:CreateWindow({
 --==================================================
 local Players = game:GetService("Players")
 local PathfindingService = game:GetService("PathfindingService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local function getCharacter()
@@ -31,7 +30,7 @@ end
 local EventTab = Window:CreateTab("Event", 4483362458)
 
 local AutoOrbToggle = EventTab:CreateToggle({
-    Name = "Auto Orb Egglings",
+    Name = "Auto Orb [❄️]",
     CurrentValue = false,
     Flag = "AutoOrb",
     Callback = function() end
@@ -58,19 +57,19 @@ task.spawn(function()
 end)
 
 --==================================================
--- MAIN TAB — AUTO INDEX (SMART)
+-- MAIN TAB — AUTO INDEX
 --==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
 
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "Auto Index (Smart + Anti-Stuck)",
+    Name = "Auto Index (Whitelist)",
     CurrentValue = false,
     Flag = "AutoIndex",
     Callback = function() end
 })
 
 --==================================================
--- 🥚 WHITELIST (TA LISTE)
+-- 🥚 WHITELIST DES ŒUFS (TA LISTE FINALE)
 --==================================================
 local AllowedEggs = {
     ["Money"]=true,["Tix"]=true,["Rich"]=true,["Timeless"]=true,["Grunch"]=true,
@@ -102,47 +101,13 @@ local AllowedEggs = {
     ["Shiny Ghost"]=true,["Penguin Egg"]=true,
     ["Colorful Lights"]=true,["Spidegg"]=true,["Shiny Iron"]=true,
     ["Skeleton"]=true,["Shiny Fish"]=true,["Candy Corn"]=true,["Pumpegg"]=true,
-    ["Shiny Glass"]=true,["Orange"]=true,
-    ["Shiny Corroded"]=true,["Shiny Grass"]=true,
+    ["Wreath"]=true,["Shiny Glass"]=true,["Orange"]=true,
+    ["Shiny Corroded"]=true,["Festive Egg"]=true,["Shiny Grass"]=true,
     ["Shiny Egg"]=true
 }
 
 --==================================================
--- 📚 EGG INFO + PRIORITY
---==================================================
-local EggInfo = require(ReplicatedStorage.Modules.EggInfo)
-
-local EggInfoByName = {}
-for _, info in ipairs(EggInfo) do
-    EggInfoByName[info.Name] = info
-end
-
-local ClassPriority = {
-    Shiny = 4,
-    Admin = 3,
-    Special = 2
-}
-
-local function isHigherPriority(a, b)
-    if not b then return true end
-    local ia, ib = EggInfoByName[a.Name], EggInfoByName[b.Name]
-    if not ia then return false end
-    if not ib then return true end
-
-    local pa = ClassPriority[ia.Class] or 1
-    local pb = ClassPriority[ib.Class] or 1
-    if pa ~= pb then
-        return pa > pb
-    end
-
-    if ia.Chance and ib.Chance then
-        return ia.Chance < ib.Chance
-    end
-    return false
-end
-
---==================================================
--- 🧭 PATHFINDING MOVE
+-- PATHFINDING MOVE (INCHANGÉ)
 --==================================================
 local function moveToPosition(humanoid, hrp, destination)
     local path = PathfindingService:CreatePath({
@@ -168,12 +133,9 @@ local function moveToPosition(humanoid, hrp, destination)
 end
 
 --==================================================
--- 🧠 AUTO INDEX (SMART + ANTI-STUCK)
+-- AUTO INDEX LOOP (WHITELIST)
 --==================================================
 task.spawn(function()
-    local lastPos
-    local stuckTime = 0
-
     while true do
         if AutoIndexToggle.CurrentValue then
             local char = getCharacter()
@@ -186,55 +148,46 @@ task.spawn(function()
                 and workspace.Map.Index:FindFirstChild("IndexArea")
 
             if eggsFolder and indexArea then
-                local bestEgg
-
                 for _, egg in ipairs(eggsFolder:GetChildren()) do
-                    if AllowedEggs[egg.Name] and EggInfoByName[egg.Name] then
-                        if isHigherPriority(egg, bestEgg) then
-                            bestEgg = egg
-                        end
-                    end
-                end
+                    if not AutoIndexToggle.CurrentValue then break end
+                    if not AllowedEggs[egg.Name] then continue end
+                    if not (egg:IsA("Model") or egg:IsA("MeshPart")) then continue end
 
-                if bestEgg then
-                    local eggPart = bestEgg:IsA("Model")
-                        and (bestEgg.PrimaryPart or bestEgg:FindFirstChildWhichIsA("BasePart", true))
-                        or bestEgg
-                    if not eggPart then goto skip end
+                    local eggPart = egg:IsA("Model")
+                        and (egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart", true))
+                        or egg
+                    if not eggPart then continue end
 
-                    local click = bestEgg:FindFirstChildWhichIsA("ClickDetector", true)
-                    if not click then goto skip end
+                    local clickDetector = egg:FindFirstChildWhichIsA("ClickDetector", true)
+                    if not clickDetector then continue end
 
+                    -- 🧭 WALK TO EGG
                     moveToPosition(humanoid, hrp, eggPart.Position)
 
-                    if lastPos and (hrp.Position - lastPos).Magnitude < 0.5 then
-                        stuckTime += 1
-                        if stuckTime >= 15 then
-                            humanoid.Jump = true
-                            stuckTime = 0
-                        end
-                    else
-                        stuckTime = 0
-                    end
-                    lastPos = hrp.Position
-
-                    if (hrp.Position - eggPart.Position).Magnitude <= 4 then
-                        fireclickdetector(click)
+                    while AutoIndexToggle.CurrentValue and egg.Parent do
+                        if (hrp.Position - eggPart.Position).Magnitude <= 4 then break end
+                        task.wait(0.1)
                     end
 
+                    if not egg.Parent then break end
+
+                    -- 🖱️ CLICK
+                    fireclickdetector(clickDetector)
+                    task.wait(0.2)
+
+                    -- 🧭 WALK TO INDEX
                     moveToPosition(humanoid, hrp, indexArea.Position)
 
-                    local t = tick()
-                    while bestEgg.Parent and tick() - t < 8 do
-                        fireclickdetector(click)
-                        task.wait(0.5)
+                    local start = tick()
+                    while AutoIndexToggle.CurrentValue and egg.Parent and tick() - start < 6 do
+                        task.wait(0.1)
                     end
 
                     task.wait(1)
+                    break
                 end
             end
         end
-        ::skip::
         task.wait(0.3)
     end
 end)
