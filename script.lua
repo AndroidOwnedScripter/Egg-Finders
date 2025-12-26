@@ -102,7 +102,7 @@ local AllowedEggs = {
     ["Colorful Lights"]=true,["Spidegg"]=true,["Shiny Iron"]=true,
     ["Skeleton"]=true,["Shiny Fish"]=true,["Candy Corn"]=true,["Pumpegg"]=true,
     ["Wreath"]=true,["Shiny Glass"]=true,["Orange"]=true,
-    ["Shiny Corroded"]=true,["Festive Egg"]=true,["Shiny Grass"]=true,
+    ["Shiny Corroded"]=true,["Shiny Grass"]=true,
     ["Shiny Egg"]=true
 }
 
