@@ -7,7 +7,7 @@ local Window = Rayfield:CreateWindow({
     Name = "Egg Finders",
     Icon = 0,
     LoadingTitle = "Egg Finders",
-    LoadingSubtitle = "by someone",
+    LoadingSubtitle = "AndroidOwnedScripter",
     ShowText = "Rayfield",
     Theme = "Default",
     ToggleUIKeybind = "K",
@@ -30,7 +30,7 @@ end
 local EventTab = Window:CreateTab("Event", 4483362458)
 
 local AutoOrbToggle = EventTab:CreateToggle({
-    Name = "Auto Orb Egglings",
+    Name = "Auto Orb [❄️]",
     CurrentValue = false,
     Flag = "AutoOrb",
     Callback = function() end
@@ -97,11 +97,11 @@ local AllowedEggs = {
     ["Paintegg"]=true,["Eg"]=true,["Pull"]=true,["Bee"]=true,["Frogg"]=true,
     ["Angry"]=true,["Shiny Wategg"]=true,["Elf"]=true,["Fruitcake"]=true,
     ["Wegg"]=true,["Pouch"]=true,["Bategg"]=true,["Shiny Fire"]=true,
-    ["Zombegg"]=true,["Rocket"]=true,["Snowglobe"]=true,["Mummy"]=true,
-    ["Shiny Ghost"]=true,["Penguin Egg"]=true,["Christmas Light"]=true,
+    ["Zombegg"]=true,["Snowglobe"]=true,["Mummy"]=true,
+    ["Shiny Ghost"]=true,["Penguin Egg"]=true,
     ["Colorful Lights"]=true,["Spidegg"]=true,["Shiny Iron"]=true,
     ["Skeleton"]=true,["Shiny Fish"]=true,["Candy Corn"]=true,["Pumpegg"]=true,
-    ["Wreath"]=true,["Shiny Glass"]=true,["Plaid Egg"]=true,["Orange"]=true,
+    ["Wreath"]=true,["Shiny Glass"]=true,["Orange"]=true,
     ["Shiny Corroded"]=true,["Festive Egg"]=true,["Shiny Grass"]=true,
     ["Shiny Egg"]=true
 }
