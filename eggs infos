@@ -1,0 +1,836 @@
+-- Decompiler will be improved VERY SOON!
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2025-12-26 20:46:16
+-- Luau version 6, Types version 3
+-- Time taken: 0.033878 seconds
+
+return {{
+	Name = "Money";
+	Class = "Special";
+	Eggash = 200;
+	Yolkies = 1;
+}, {
+	Name = "Tix";
+	Class = "Special";
+	Eggash = 3000;
+	Yolkies = 0;
+}, {
+	Name = "Rich";
+	Class = "Special";
+	Eggash = 40000;
+	Yolkies = 0;
+}, {
+	Name = "Timeless";
+	Class = "Special";
+	Eggash = 2;
+	Yolkies = 0;
+}, {
+	Name = "Grunch";
+	Class = "Special";
+	Eggash = 2;
+	Yolkies = 0;
+}, {
+	Name = "Richest";
+	Class = "Special";
+	Eggash = 2;
+	Yolkies = 0;
+}, {
+	Name = "Mustard";
+	Class = "Admin";
+	Eggash = 67;
+	Yolkies = 0;
+}, {
+	Name = "Chiken Stars";
+	Class = "Admin";
+	Eggash = 67;
+	Yolkies = 0;
+}, {
+	Name = "Fake God";
+	Class = "Admin";
+	Eggash = 2;
+	Yolkies = 0;
+}, {
+	Name = "London";
+	Class = "Admin";
+	Eggash = 2;
+	Yolkies = 0;
+}, {
+	Name = "Celebration";
+	Class = "Special";
+	Eggash = 5;
+	Yolkies = 0;
+}, {
+	Name = "Mango";
+	Class = "Admin";
+	Eggash = 67;
+	Yolkies = 0;
+}, {
+	Name = "Crabegg PRIME";
+	Class = "Admin";
+	Eggash = 2;
+	Yolkies = 0;
+}, {
+	Name = "2025 Meme Trophy";
+	Class = "Special";
+	Eggash = 1;
+	Yolkies = 0;
+}, {
+	Name = "Reverie";
+	Class = "Special";
+	Eggash = 1;
+	Yolkies = 0;
+}, {
+	Name = "Seraphim";
+	Class = "Special";
+	Eggash = 1;
+	Yolkies = 0;
+}, {
+	Name = "Winning Egg";
+	Class = "Special";
+	Eggash = 1;
+	Yolkies = 0;
+}, {
+	Name = "Admegg";
+	Class = "Special";
+	Eggash = 1;
+	Yolkies = 0;
+}, {
+	Name = "Capybaregg";
+	Class = "Special";
+	Eggash = 1300;
+	Yolkies = 0;
+}, {
+	Name = "JackoLantegg";
+	Class = "Special";
+	Eggash = 4;
+	Yolkies = 0;
+}, {
+	Name = "Doodle's";
+	Class = "Special";
+	Eggash = 2;
+	Yolkies = 0;
+}, {
+	Name = "Veri Epik Eg";
+	Class = "Special";
+	Eggash = 67;
+	Yolkies = 0;
+}, {
+	Name = "StarFall";
+	Class = "Special";
+	Eggash = 70;
+	Yolkies = 0;
+}, {
+	Name = "Shiny Quantum";
+	Chance = 9.779951100244498e-12;
+	Class = "SHINY";
+	Eggash = -1;
+}, {
+	Name = "Malware";
+	Chance = 1.9839733482226035e-09;
+	Class = "???";
+	Eggash = 180000;
+}, {
+	Name = "Quantum";
+	Chance = 9.7799511002445e-09;
+	Class = "???";
+	Eggash = 60000;
+}, {
+	Name = "G̶l̷i̷t̸c̷h̷e̴d̸ ̸F̵r̴a̶g̸m̷e̸n̵t̴";
+	Class = "‎‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ";
+	Eggash = 1;
+}, {
+	Name = "ERR0R";
+	Chance = 2.4750000247500003e-08;
+	Class = "???";
+	Eggash = 40040;
+}, {
+	Name = "God";
+	Chance = 1e-07;
+	Class = "Ethereal";
+	Eggash = 20000;
+}, {
+	Name = "Angel";
+	Chance = 1.1764705882352942e-07;
+	Class = "Winter";
+	Eggash = 10000;
+}, {
+	Name = "Alien";
+	Class = "Ethereal";
+	Eggash = 12000;
+}, {
+	Name = "Evil";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Golden Santegg";
+	Chance = 2.2222222222222222e-07;
+	Class = "Winter";
+	Eggash = 10000;
+	Yolkies = 0;
+}, {
+	Name = "Ice Candy";
+	Chance = 2.631578947368421e-07;
+	Class = "Winter";
+	Eggash = 10000;
+	Yolkies = 0;
+}, {
+	Name = "Matterless";
+	Chance = 2.857142857142857e-07;
+	Class = "Ethereal";
+	Eggash = 10000;
+	Yolkies = 0;
+}, {
+	Name = "Royal";
+	Chance = 4.103968291099396e-07;
+	Class = "Ethereal";
+	Eggash = 8801;
+}, {
+	Name = "Santegg";
+	Chance = 8.928571428571428e-07;
+	Class = "Winter";
+	Eggash = 7000;
+}, {
+	Name = "Ruby Faberge";
+	Chance = 5.294661128451126e-07;
+	Class = "Ethereal";
+	Eggash = 6104;
+}, {
+	Name = "Cerials";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Sapphire";
+	Class = "Ethereal";
+	Eggash = 1;
+}, {
+	Name = "Darkness";
+	Chance = 7.575757575757576e-07;
+	Class = "Ethereal";
+	Eggash = 4681;
+}, {
+	Name = "Gingerbread";
+	Chance = 0.000002352941176470588;
+	Class = "Winter";
+	Eggash = 3000;
+}, {
+	Name = "Infinitegg";
+	Chance = 0.0000010403662089055348;
+	Class = "Ethereal";
+	Eggash = 2403;
+}, {
+	Name = "Rudolf";
+	Chance = 0.000004651162790697674;
+	Class = "Winter";
+	Eggash = 1950;
+}, {
+	Name = "Ruby";
+	Chance = 0.000002203128442388191;
+	Class = "Ethereal";
+	Eggash = 1610;
+}, {
+	Name = "Blackhole";
+	Chance = 0.000002564102564102564;
+	Class = "Ethereal";
+	Eggash = 1500;
+}, {
+	Name = "Burger";
+	Chance = 0.0000031210986267166042;
+	Class = "Ethereal";
+	Eggash = 1460;
+}, {
+	Name = "Layered";
+	Chance = 0.0000035714285714285714;
+	Class = "Ethereal";
+	Eggash = 1800;
+}, {
+	Name = "Golden Ornament";
+	Chance = 0.00001000010000100001;
+	Class = "Winter";
+	Eggash = 2200;
+}, {
+	Name = "Draculegg";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "DogEgg";
+	Chance = 0.000005142921796731159;
+	Class = "Mythical";
+	Eggash = 1700;
+}, {
+	Name = "Bellegg";
+	Chance = 0.000013333333333333333;
+	Class = "Winter";
+	Eggash = 1600;
+}, {
+	Name = "Super Ghost";
+	Chance = 0.000005446623093681917;
+	Class = "Mythical";
+	Eggash = 1500;
+}, {
+	Name = "Paradox";
+	Chance = 0.000005580357142857143;
+	Class = "Mythical";
+	Eggash = 1400;
+}, {
+	Name = "Holy";
+	Chance = 0.000005709065996802923;
+	Class = "Mythical";
+	Eggash = 1300;
+}, {
+	Name = "Squid";
+	Chance = 0.000006060238773407673;
+	Class = "Mythical";
+	Eggash = 1250;
+}, {
+	Name = "Grave";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Shiny Golden";
+	Chance = 1.8780048076923078e-08;
+	Class = "SHINY";
+	Eggash = 22000;
+}, {
+	Name = "Golden";
+	Chance = 0.00000641025641025641;
+	Class = "Mythical";
+	Eggash = 2200;
+}, {
+	Name = "Blue Ornament";
+	Chance = 0.00002;
+	Class = "Winter";
+	Eggash = 700;
+}, {
+	Name = "Green Ornament";
+	Chance = 0.00002;
+	Class = "Winter";
+	Eggash = 700;
+}, {
+	Name = "Red Ornament";
+	Chance = 0.00002;
+	Class = "Winter";
+	Eggash = 700;
+}, {
+	Name = "RoEgg";
+	Chance = 0.000006654245408570668;
+	Class = "Mythical";
+	Eggash = 1320;
+}, {
+	Name = "Shiny Blueberregg";
+	Chance = 2.44140625e-08;
+	Class = "SHINY";
+	Eggash = 50000;
+}, {
+	Name = "Nutcracker";
+	Chance = 0.00002380952380952381;
+	Class = "Winter";
+	Eggash = 1975;
+}, {
+	Name = "Blueberregg";
+	Chance = 0.000007142857142857143;
+	Class = "Mythical";
+	Eggash = 1287;
+}, {
+	Name = "Hellish";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Crabegg";
+	Chance = 0.000007507507507507507;
+	Class = "Mythical";
+	Eggash = 1254;
+}, {
+	Name = "CartRide";
+	Chance = 0.0000073099415204678366;
+	Class = "Mythical";
+	Eggash = 1221;
+}, {
+	Name = "Appegg";
+	Chance = 0.000007705585008013808;
+	Class = "Mythical";
+	Eggash = 1188;
+}, {
+	Name = "Witch";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Ice";
+	Chance = 0.000009090909090909091;
+	Class = "Mythical";
+	Eggash = 1122;
+}, {
+	Name = "Eggday";
+	Chance = 0.000009803921568627451;
+	Class = "Mythical";
+	Eggash = 792;
+}, {
+	Name = "Sun";
+	Chance = 0.00001616161616161616;
+	Class = "Legendary";
+	Eggash = 500;
+}, {
+	Name = "Orangegg";
+	Chance = 0.000016666666666666667;
+	Class = "Legendary";
+	Eggash = 475;
+}, {
+	Name = "Candle";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Electricitegg";
+	Chance = 0.00001680672268907563;
+	Class = "Legendary";
+	Eggash = 450;
+}, {
+	Name = "Banana";
+	Chance = 0.00001801801801801802;
+	Class = "Legendary";
+	Eggash = 425;
+}, {
+	Name = "Shiny Rategg";
+	Class = "SHINY";
+	Eggash = 0;
+}, {
+	Name = "Rategg";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Corrupted";
+	Chance = 0.000018796992481203007;
+	Class = "Legendary";
+	Eggash = 420;
+}, {
+	Name = "Iglegg";
+	Chance = 0.0000909090909090909;
+	Class = "Winter";
+	Eggash = 750;
+}, {
+	Name = "Cheese";
+	Chance = 0.000024752475247524754;
+	Class = "Legendary";
+	Eggash = 370;
+}, {
+	Name = "Magma";
+	Chance = 0.000025;
+	Class = "Legendary";
+	Eggash = 360;
+}, {
+	Name = "Wild";
+	Chance = 0.00002554278416347382;
+	Class = "Legendary";
+	Eggash = 350;
+}, {
+	Name = "Core";
+	Chance = 0.000025947067981318112;
+	Class = "Legendary";
+	Eggash = 340;
+}, {
+	Name = "Crow";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Seedlegg";
+	Chance = 0.000026315789473684212;
+	Class = "Legendary";
+	Eggash = 280;
+}, {
+	Name = "Paintegg";
+	Chance = 0.00002857142857142857;
+	Class = "Legendary";
+	Eggash = 272;
+}, {
+	Name = "Eg";
+	Chance = 0.000030303030303030302;
+	Class = "Legendary";
+	Eggash = 265;
+}, {
+	Name = "Pull";
+	Chance = 0.00003125;
+	Class = "Legendary";
+	Eggash = 255;
+}, {
+	Name = "Bee";
+	Chance = 0.000033333333333333335;
+	Class = "Legendary";
+	Eggash = 237;
+}, {
+	Name = "Frogg";
+	Chance = 0.00003571428571428572;
+	Class = "Legendary";
+	Eggash = 234;
+}, {
+	Name = "Angry";
+	Chance = 0.000037037037037037037;
+	Class = "Legendary";
+	Eggash = 220;
+}, {
+	Name = "Shiny Wategg";
+	Chance = 2.308658392434988e-07;
+	Class = "SHINY";
+	Eggash = 4400;
+}, {
+	Name = "Elf";
+	Chance = 0.00020833333333333335;
+	Class = "Winter";
+	Eggash = 175;
+}, {
+	Name = "Wategg";
+	Chance = 0.00023640661938534278;
+	Class = "Epic";
+	Eggash = 170;
+}, {
+	Name = "Fruitcake";
+	Chance = 0.00025316455696202533;
+	Class = "Winter";
+	Eggash = 200;
+}, {
+	Name = "Clock";
+	Chance = 0.0002777777777777778;
+	Class = "Epic";
+	Eggash = 150;
+}, {
+	Name = "Lampegg";
+	Chance = 0.0003125;
+	Class = "Epic";
+	Eggash = 145;
+}, {
+	Name = "Tabby";
+	Chance = 0.0003448275862068965;
+	Class = "Epic";
+	Eggash = 140;
+}, {
+	Name = "Chocolate";
+	Chance = 0.0004;
+	Class = "Epic";
+	Eggash = 125;
+}, {
+	Name = "Wegg";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Plant";
+	Chance = 0.00045454545454545455;
+	Class = "Epic";
+	Eggash = 535;
+	SpawnOnGround = true;
+}, {
+	Name = "Pouch";
+	Chance = 0.00046511627906976747;
+	Class = "Winter";
+	Eggash = 260;
+}, {
+	Name = "Bategg";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Shiny Fire";
+	Class = "SHINY";
+	Eggash = 10;
+}, {
+	Name = "Fire";
+	Chance = 0.0005263157894736842;
+	Class = "Epic";
+	Eggash = 245;
+}, {
+	Name = "Dinegg";
+	Chance = 0.000625;
+	Class = "Epic";
+	Eggash = 200;
+}, {
+	Name = "Chikegg";
+	Chance = 0.0007692307692307692;
+	Class = "Epic";
+	Eggash = 160;
+}, {
+	Name = "Zombegg";
+	Class = "Halloween";
+	Eggash = 4;
+}, {
+	Name = "Ash";
+	Chance = 0.0009090909090909091;
+	Class = "Epic";
+	Eggash = 100;
+}, {
+	Name = "Rocket";
+	Chance = 0.001001001001001001;
+	Class = "Rare";
+	Eggash = 64;
+}, {
+	Name = "Snowglobe";
+	Chance = 0.0011363636363636363;
+	Class = "Winter";
+	Eggash = 64;
+}, {
+	Name = "Mummy";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Shiny Ghost";
+	Class = "SHINY";
+	Eggash = 6000;
+}, {
+	Name = "Ghost";
+	Chance = 0.0011494252873563218;
+	Class = "Rare";
+	Eggash = 62;
+}, {
+	Name = "Seal";
+	Chance = 0.0011904761904761906;
+	Class = "Rare";
+	Eggash = 58;
+}, {
+	Name = "Space";
+	Chance = 0.001388888888888889;
+	Class = "Rare";
+	Eggash = 55;
+}, {
+	Name = "Melon";
+	Chance = 0.0014705882352941176;
+	Class = "Rare";
+	Eggash = 52;
+}, {
+	Name = "Penguin Egg";
+	Chance = 0.0015151515151515152;
+	Class = "Winter";
+	Eggash = 51;
+}, {
+	Name = "Moon";
+	Chance = 0.0015625;
+	Class = "Rare";
+	Eggash = 50;
+}, {
+	Name = "Christmas Light";
+	Chance = 0.0017241379310344827;
+	Class = "Winter";
+	Eggash = 49;
+}, {
+	Name = "Brewegg";
+	Chance = 0.0019230769230769232;
+	Class = "Rare";
+	Eggash = 48;
+}, {
+	Name = "Noob";
+	Chance = 0.00196078431372549;
+	Class = "Rare";
+	Eggash = 47;
+}, {
+	Name = "Hamptegg";
+	Chance = 0.002;
+	Class = "Rare";
+	Eggash = 45;
+}, {
+	Name = "Dino";
+	Chance = 0.0020833333333333333;
+	Class = "Rare";
+	Eggash = 42;
+}, {
+	Name = "Sategg";
+	Chance = 0.002380952380952381;
+	Class = "Rare";
+	Eggash = 36;
+}, {
+	Name = "Colorful Lights";
+	Chance = 0.002564102564102564;
+	Class = "Winter";
+	Eggash = 34;
+}, {
+	Name = "Colorful";
+	Chance = 0.0029411764705882353;
+	Class = "Rare";
+	Eggash = 30;
+}, {
+	Name = "Spidegg";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Grumpy";
+	Chance = 0.004016064257028112;
+	Class = "Uncommon";
+	Eggash = 29;
+}, {
+	Name = "Shiny Iron";
+	Class = "SHINY";
+	Eggash = 2800;
+}, {
+	Name = "Iron";
+	Chance = 0.004545454545454545;
+	Class = "Uncommon";
+	Eggash = 28;
+}, {
+	Name = "Pinetree";
+	Chance = 0.004761904761904762;
+	Class = "Winter";
+	Eggash = 27;
+}, {
+	Name = "Skeleton";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Snailegg";
+	Chance = 0.005;
+	Class = "Uncommon";
+	Eggash = 27;
+}, {
+	Name = "Cracked";
+	Chance = 0.005714285714285714;
+	Class = "Uncommon";
+	Eggash = 25;
+}, {
+	Name = "Snowman";
+	Chance = 0.00625;
+	Class = "Winter";
+	Eggash = 24;
+}, {
+	Name = "Shiny Fish";
+	Class = "SHINY";
+	Eggash = 10;
+}, {
+	Name = "DIY";
+	Chance = 0.006666666666666667;
+	Class = "Uncommon";
+	Eggash = 24;
+}, {
+	Name = "Fish";
+	Chance = 0.008;
+	Class = "Uncommon";
+	Eggash = 10;
+}, {
+	Name = "Candy Corn";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Inverted";
+	Chance = 0.009009009009009009;
+	Class = "Uncommon";
+	Eggash = 23;
+}, {
+	Name = "Gift";
+	Chance = 0.009259259259259259;
+	Class = "Uncommon";
+	Eggash = 22;
+}, {
+	Name = "Rock";
+	Chance = 0.01;
+	Class = "Uncommon";
+	Eggash = 20;
+}, {
+	Name = "Pumpegg";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Man";
+	Chance = 0.011627906976744186;
+	Class = "Common";
+	Eggash = 17;
+}, {
+	Name = "Builderman";
+	Chance = 0.013157894736842105;
+	Class = "Common";
+	Eggash = 16;
+}, {
+	Name = "Wreath";
+	Chance = 0.014705882352941176;
+	Class = "Winter";
+	Eggash = 15;
+}, {
+	Name = "Cardboard";
+	Chance = 0.016129032258064516;
+	Class = "Common";
+	Eggash = 14;
+}, {
+	Name = "Snow";
+	Chance = 0.020833333333333332;
+	Class = "Common";
+	Eggash = 12;
+}, {
+	Name = "Shiny Glass";
+	Class = "SHINY";
+	Eggash = 10;
+}, {
+	Name = "Glass";
+	Chance = 0.023809523809523808;
+	Class = "Common";
+	Eggash = 10;
+}, {
+	Name = "Plaid Egg";
+	Chance = 0.02631578947368421;
+	Class = "Winter";
+	Eggash = 10;
+}, {
+	Name = "Orange";
+	Class = "Halloween";
+	Eggash = 4;
+}, {
+	Name = "Wood";
+	Chance = 0.029411764705882353;
+	Class = "Common";
+	Eggash = 9;
+}, {
+	Name = "Shiny Corroded";
+	Class = "SHINY";
+	Eggash = 10;
+}, {
+	Name = "Corroded";
+	Chance = 0.03125;
+	Class = "Common";
+	Eggash = 8;
+}, {
+	Name = "Brick";
+	Chance = 0.03571428571428571;
+	Class = "Common";
+	Eggash = 7;
+}, {
+	Name = "Green";
+	Chance = 0.041666666666666664;
+	Class = "Common";
+	Eggash = 6;
+}, {
+	Name = "Blue";
+	Chance = 0.045454545454545456;
+	Class = "Common";
+	Eggash = 5;
+}, {
+	Name = "Red";
+	Chance = 0.05555555555555555;
+	Class = "Common";
+	Eggash = 4;
+}, {
+	Name = "Festive Egg";
+	Chance = 0.0625;
+	Class = "Winter";
+	Eggash = 4;
+}, {
+	Name = "Purple";
+	Class = "Halloween";
+	Eggash = 0;
+}, {
+	Name = "Shiny Grass";
+	Class = "SHINY";
+	Eggash = 300;
+}, {
+	Name = "Grass";
+	Chance = 0.08333333333333333;
+	Class = "Common";
+	Eggash = 3;
+}, {
+	Name = "Sand";
+	Chance = 0.1;
+	Class = "Common";
+	Eggash = 2;
+}, {
+	Name = "Welded";
+	Chance = 0.16666666666666666;
+	Class = "Common";
+	Eggash = 1;
+}, {
+	Name = "Shiny Egg";
+	Chance = 0.00048828125;
+	Class = "SHINY";
+	Eggash = 100;
+}, {
+	Name = "Egg";
+	Chance = 0.5;
+	Class = "Common";
+	Eggash = 1;
+}}
