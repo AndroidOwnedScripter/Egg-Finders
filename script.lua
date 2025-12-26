@@ -1,6 +1,8 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+--==================================================
+-- RAYFIELD
+--==================================================
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
--- Création de la fenêtre
 local Window = Rayfield:CreateWindow({
     Name = "Egg Finders",
     Icon = 0,
@@ -9,43 +11,42 @@ local Window = Rayfield:CreateWindow({
     ShowText = "Rayfield",
     Theme = "Default",
     ToggleUIKeybind = "K",
-    DisableRayfieldPrompts = false,
-    DisableBuildWarnings = false
 })
 
--- Création de l'onglet PlayerTab
-local PlayerTab = Window:CreateTab("Event", 4483362458)
+--==================================================
+-- SERVICES
+--==================================================
+local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
 
--- Création du toggle Auto Orb
-local AutoOrbToggle = PlayerTab:CreateToggle({
+local player = Players.LocalPlayer
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+--==================================================
+-- EVENT TAB — AUTO ORB (INCHANGÉ)
+--==================================================
+local EventTab = Window:CreateTab("Event", 4483362458)
+
+local AutoOrbToggle = EventTab:CreateToggle({
     Name = "Auto Orb Egglings",
     CurrentValue = false,
-    Flag = "AutoOrbToggle",
-    Callback = function(Value)
-        -- Rien à mettre ici, la boucle principale gère l'activation/désactivation
-    end,
+    Flag = "AutoOrb",
+    Callback = function() end
 })
 
--- Boucle principale qui tourne en permanence
-spawn(function()
-    local Players = game:GetService("Players")
-    local player = Players.LocalPlayer
-
-    local function getCharacter()
-        return player.Character or player.CharacterAdded:Wait()
-    end
-
+task.spawn(function()
     while true do
         if AutoOrbToggle.CurrentValue then
-            local character = getCharacter()
-            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+            local char = getCharacter()
+            local hrp = char:WaitForChild("HumanoidRootPart")
 
             local orbsFolder = workspace:FindFirstChild("Orbs")
             if orbsFolder then
-                for _, orb in pairs(orbsFolder:GetChildren()) do
-                    if orb.Name == "ItemOrb" and orb:IsA("BasePart") then
-                        -- Téléporte le joueur sur l'orb
-                        humanoidRootPart.CFrame = orb.CFrame + Vector3.new(0, 3, 0)
+                for _, orb in ipairs(orbsFolder:GetChildren()) do
+                    if orb:IsA("BasePart") and orb.Name == "ItemOrb" then
+                        hrp.CFrame = orb.CFrame + Vector3.new(0, 3, 0)
                         break
                     end
                 end
@@ -55,51 +56,91 @@ spawn(function()
     end
 end)
 
-
+--==================================================
+-- MAIN TAB — AUTO INDEX
+--==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
 
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "Auto Index Rare Eggs",
+    Name = "Auto Index (Whitelist)",
     CurrentValue = false,
-    Flag = "AutoIndexRareEggs",
+    Flag = "AutoIndex",
     Callback = function() end
 })
 
--- Services
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local player = Players.LocalPlayer
-
--- EggInfo
-local EggInfo = require(ReplicatedStorage.Modules.EggInfo)
-
--- Classes ignorées
-local IgnoredClasses = {
-    Common = true,
-    Uncommon = true,
-    Rare = true,
-    Epic = true
+--==================================================
+-- 🥚 WHITELIST DES ŒUFS (TA LISTE FINALE)
+--==================================================
+local AllowedEggs = {
+    ["Money"]=true,["Tix"]=true,["Rich"]=true,["Timeless"]=true,["Grunch"]=true,
+    ["Richest"]=true,["Mustard"]=true,["Chiken Stars"]=true,["Fake God"]=true,
+    ["London"]=true,["Celebration"]=true,["Mango"]=true,["Crabegg PRIME"]=true,
+    ["2025 Meme Trophy"]=true,["Reverie"]=true,["Seraphim"]=true,["Winning Egg"]=true,
+    ["Admegg"]=true,["Capybaregg"]=true,["JackoLantegg"]=true,["Doodle’s"]=true,
+    ["Veri Epik Eg"]=true,["StarFall"]=true,["Shiny Quantum"]=true,["Malware"]=true,
+    ["Quantum"]=true,["G̶l̷i̷t̸c̷h̷e̴d̸ ̸F̵r̴a̶g̸m̷e̸n̵t̴"]=true,
+    ["ERR0R"]=true,["God"]=true,["Angel"]=true,["Alien"]=true,["Evil"]=true,
+    ["Golden Santegg"]=true,["Ice Candy"]=true,["Matterless"]=true,["Royal"]=true,
+    ["Santegg"]=true,["Ruby Faberge"]=true,["Cerials"]=true,["Sapphire"]=true,
+    ["Darkness"]=true,["Gingerbread"]=true,["Infinitegg"]=true,["Rudolf"]=true,
+    ["Ruby"]=true,["Blackhole"]=true,["Burger"]=true,["Layered"]=true,
+    ["Golden Ornament"]=true,["Draculegg"]=true,["DogEgg"]=true,["Bellegg"]=true,
+    ["Super Ghost"]=true,["Paradox"]=true,["Holy"]=true,["Squid"]=true,["Grave"]=true,
+    ["Shiny Golden"]=true,["Golden"]=true,["Blue Ornament"]=true,
+    ["Green Ornament"]=true,["Red Ornament"]=true,["RoEgg"]=true,
+    ["Shiny Blueberregg"]=true,["Nutcracker"]=true,["Blueberregg"]=true,
+    ["Hellish"]=true,["Crabegg"]=true,["CartRide"]=true,["Appegg"]=true,
+    ["Witch"]=true,["Ice"]=true,["Eggday"]=true,["Sun"]=true,["Orangegg"]=true,
+    ["Candle"]=true,["Electricitegg"]=true,["Banana"]=true,["Shiny Rategg"]=true,
+    ["Rategg"]=true,["Corrupted"]=true,["Iglegg"]=true,["Cheese"]=true,
+    ["Magma"]=true,["Wild"]=true,["Core"]=true,["Crow"]=true,["Seedlegg"]=true,
+    ["Paintegg"]=true,["Eg"]=true,["Pull"]=true,["Bee"]=true,["Frogg"]=true,
+    ["Angry"]=true,["Shiny Wategg"]=true,["Elf"]=true,["Fruitcake"]=true,
+    ["Wegg"]=true,["Pouch"]=true,["Bategg"]=true,["Shiny Fire"]=true,
+    ["Zombegg"]=true,["Rocket"]=true,["Snowglobe"]=true,["Mummy"]=true,
+    ["Shiny Ghost"]=true,["Penguin Egg"]=true,["Christmas Light"]=true,
+    ["Colorful Lights"]=true,["Spidegg"]=true,["Shiny Iron"]=true,
+    ["Skeleton"]=true,["Shiny Fish"]=true,["Candy Corn"]=true,["Pumpegg"]=true,
+    ["Wreath"]=true,["Shiny Glass"]=true,["Plaid Egg"]=true,["Orange"]=true,
+    ["Shiny Corroded"]=true,["Festive Egg"]=true,["Shiny Grass"]=true,
+    ["Shiny Egg"]=true
 }
 
-local function getCharacter()
-    return player.Character or player.CharacterAdded:Wait()
-end
+--==================================================
+-- PATHFINDING MOVE (INCHANGÉ)
+--==================================================
+local function moveToPosition(humanoid, hrp, destination)
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true,
+        AgentJumpHeight = 7,
+        AgentMaxSlope = 45
+    })
 
--- Récupérer la classe depuis EggInfo
-local function getEggClass(eggName)
-    for _, info in pairs(EggInfo) do
-        if info.Name == eggName then
-            return info.Class
+    path:ComputeAsync(hrp.Position, destination)
+    if path.Status ~= Enum.PathStatus.Success then return false end
+
+    for _, wp in ipairs(path:GetWaypoints()) do
+        if not AutoIndexToggle.CurrentValue then return false end
+        humanoid:MoveTo(wp.Position)
+        if wp.Action == Enum.PathWaypointAction.Jump then
+            humanoid.Jump = true
         end
+        humanoid.MoveToFinished:Wait()
     end
+    return true
 end
 
--- Boucle principale
+--==================================================
+-- AUTO INDEX LOOP (WHITELIST)
+--==================================================
 task.spawn(function()
     while true do
         if AutoIndexToggle.CurrentValue then
             local char = getCharacter()
             local hrp = char:WaitForChild("HumanoidRootPart")
+            local humanoid = char:WaitForChild("Humanoid")
 
             local eggsFolder = workspace:FindFirstChild("Eggs")
             local indexArea = workspace.Map
@@ -108,48 +149,45 @@ task.spawn(function()
 
             if eggsFolder and indexArea then
                 for _, egg in ipairs(eggsFolder:GetChildren()) do
-                    if egg:IsA("Model") or egg:IsA("MeshPart") then
-                        local eggClass = getEggClass(egg.Name)
+                    if not AutoIndexToggle.CurrentValue then break end
+                    if not AllowedEggs[egg.Name] then continue end
+                    if not (egg:IsA("Model") or egg:IsA("MeshPart")) then continue end
 
-                        if eggClass and not IgnoredClasses[eggClass] then
-                            -- Trouver la part principale
-                            local eggPart
-                            if egg:IsA("Model") then
-                                eggPart = egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart", true)
-                            else
-                                eggPart = egg
-                            end
-                            if not eggPart then continue end
+                    local eggPart = egg:IsA("Model")
+                        and (egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart", true))
+                        or egg
+                    if not eggPart then continue end
 
-                            -- 🔍 Chercher le ClickDetector PARTOUT dans l'œuf
-                            local clickDetector = egg:FindFirstChildWhichIsA("ClickDetector", true)
-                            if not clickDetector then
-                                warn("Aucun ClickDetector trouvé pour :", egg.Name)
-                                continue
-                            end
+                    local clickDetector = egg:FindFirstChildWhichIsA("ClickDetector", true)
+                    if not clickDetector then continue end
 
-                            -- 🚀 TP sur l'œuf
-                            hrp.CFrame = eggPart.CFrame + Vector3.new(0, 2.5, 0)
-                            task.wait(0.15)
+                    -- 🧭 WALK TO EGG
+                    moveToPosition(humanoid, hrp, eggPart.Position)
 
-                            -- 🖱️ CLICK
-                            fireclickdetector(clickDetector)
-
-                            task.wait(0.2)
-
-                            -- 📍 TP vers l'Index
-                            hrp.CFrame = indexArea.CFrame + Vector3.new(0, 3, 0)
-
-                            -- ⏱️ DELAY demandé
-                            task.wait(1)
-
-                            break -- 1 œuf à la fois
-                        end
+                    while AutoIndexToggle.CurrentValue and egg.Parent do
+                        if (hrp.Position - eggPart.Position).Magnitude <= 4 then break end
+                        task.wait(0.1)
                     end
+
+                    if not egg.Parent then break end
+
+                    -- 🖱️ CLICK
+                    fireclickdetector(clickDetector)
+                    task.wait(0.2)
+
+                    -- 🧭 WALK TO INDEX
+                    moveToPosition(humanoid, hrp, indexArea.Position)
+
+                    local start = tick()
+                    while AutoIndexToggle.CurrentValue and egg.Parent and tick() - start < 6 do
+                        task.wait(0.1)
+                    end
+
+                    task.wait(1)
+                    break
                 end
             end
         end
-
         task.wait(0.3)
     end
 end)
