@@ -61,15 +61,17 @@ end)
 --==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
 
+
+
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "Auto Index (Whitelist)",
+    Name = "Auto Index (Smart + Anti-Stuck)",
     CurrentValue = false,
     Flag = "AutoIndex",
     Callback = function() end
 })
 
 --==================================================
--- 🥚 WHITELIST DES ŒUFS (TA LISTE FINALE)
+-- 🥚 WHITELIST
 --==================================================
 local AllowedEggs = {
     ["Money"]=true,["Tix"]=true,["Rich"]=true,["Timeless"]=true,["Grunch"]=true,
@@ -107,9 +109,41 @@ local AllowedEggs = {
 }
 
 --==================================================
--- PATHFINDING MOVE (INCHANGÉ)
+-- 📚 EGG INFO + PRIORITY
 --==================================================
-local function moveToPosition(humanoid, hrp, destination)
+local EggInfo = require(ReplicatedStorage.Modules.EggInfo)
+
+local EggInfoByName = {}
+for _, info in ipairs(EggInfo) do
+    EggInfoByName[info.Name] = info
+end
+
+local ClassPriority = {
+    Shiny = 4,
+    Admin = 3,
+    Special = 2
+}
+
+local function isHigherPriority(a, b)
+    if not b then return true end
+    local ia, ib = EggInfoByName[a.Name], EggInfoByName[b.Name]
+    if not ia then return false end
+    if not ib then return true end
+
+    local pa = ClassPriority[ia.Class] or 1
+    local pb = ClassPriority[ib.Class] or 1
+    if pa ~= pb then return pa > pb end
+
+    if ia.Chance and ib.Chance then
+        return ia.Chance < ib.Chance
+    end
+    return false
+end
+
+--==================================================
+-- 🧭 PATHFINDING
+--==================================================
+local function moveTo(humanoid, hrp, destination)
     local path = PathfindingService:CreatePath({
         AgentRadius = 2,
         AgentHeight = 5,
@@ -133,9 +167,12 @@ local function moveToPosition(humanoid, hrp, destination)
 end
 
 --==================================================
--- AUTO INDEX LOOP (WHITELIST)
+-- 🧠 AUTO INDEX (ANTI-STUCK)
 --==================================================
 task.spawn(function()
+    local lastPos
+    local stuckTime = 0
+
     while true do
         if AutoIndexToggle.CurrentValue then
             local char = getCharacter()
@@ -148,46 +185,61 @@ task.spawn(function()
                 and workspace.Map.Index:FindFirstChild("IndexArea")
 
             if eggsFolder and indexArea then
+                local bestEgg
+
+                -- 🔍 Scan intelligent
                 for _, egg in ipairs(eggsFolder:GetChildren()) do
-                    if not AutoIndexToggle.CurrentValue then break end
-                    if not AllowedEggs[egg.Name] then continue end
-                    if not (egg:IsA("Model") or egg:IsA("MeshPart")) then continue end
+                    if AllowedEggs[egg.Name] and EggInfoByName[egg.Name] then
+                        if isHigherPriority(egg, bestEgg) then
+                            bestEgg = egg
+                        end
+                    end
+                end
 
-                    local eggPart = egg:IsA("Model")
-                        and (egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart", true))
-                        or egg
-                    if not eggPart then continue end
+                if bestEgg then
+                    local eggPart = bestEgg:IsA("Model")
+                        and (bestEgg.PrimaryPart or bestEgg:FindFirstChildWhichIsA("BasePart", true))
+                        or bestEgg
+                    if not eggPart then goto continue end
 
-                    local clickDetector = egg:FindFirstChildWhichIsA("ClickDetector", true)
-                    if not clickDetector then continue end
+                    local click = bestEgg:FindFirstChildWhichIsA("ClickDetector", true)
+                    if not click then goto continue end
 
-                    -- 🧭 WALK TO EGG
-                    moveToPosition(humanoid, hrp, eggPart.Position)
+                    -- 🚶 Move to egg
+                    moveTo(humanoid, hrp, eggPart.Position)
 
-                    while AutoIndexToggle.CurrentValue and egg.Parent do
-                        if (hrp.Position - eggPart.Position).Magnitude <= 4 then break end
-                        task.wait(0.1)
+                    -- 🧠 Anti-stuck detection
+                    if lastPos and (hrp.Position - lastPos).Magnitude < 0.5 then
+                        stuckTime += 1
+                        if stuckTime >= 15 then
+                            humanoid.Jump = true
+                            stuckTime = 0
+                        end
+                    else
+                        stuckTime = 0
+                    end
+                    lastPos = hrp.Position
+
+                    -- Click
+                    if (hrp.Position - eggPart.Position).Magnitude <= 4 then
+                        fireclickdetector(click)
                     end
 
-                    if not egg.Parent then break end
+                    -- 🚶 Move to index
+                    moveTo(humanoid, hrp, indexArea.Position)
 
-                    -- 🖱️ CLICK
-                    fireclickdetector(clickDetector)
-                    task.wait(0.2)
-
-                    -- 🧭 WALK TO INDEX
-                    moveToPosition(humanoid, hrp, indexArea.Position)
-
-                    local start = tick()
-                    while AutoIndexToggle.CurrentValue and egg.Parent and tick() - start < 6 do
-                        task.wait(0.1)
+                    -- Wait egg disappear
+                    local t = tick()
+                    while bestEgg.Parent and tick() - t < 8 do
+                        fireclickdetector(click)
+                        task.wait(0.5)
                     end
 
                     task.wait(1)
-                    break
                 end
             end
         end
+        ::continue::
         task.wait(0.3)
     end
 end)
