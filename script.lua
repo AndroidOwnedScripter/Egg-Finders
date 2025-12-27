@@ -8,7 +8,7 @@ local Window = Rayfield:CreateWindow({
     Icon = 0,
     LoadingTitle = "Egg Finders",
     LoadingSubtitle = "AndroidOwnedScripter",
-    ShowText = "Rayfield",
+    ShowText = "Loading",
     Theme = "Default",
     ToggleUIKeybind = "K",
 })
@@ -308,63 +308,59 @@ end)
 -- AUTOSELL
 --==================================================
 
-local AutoSellAuraToggle = MainTab:CreateToggle({
+local AutoSellCrusherToggle = MainTab:CreateToggle({
     Name = "AutoSell",
     CurrentValue = false,
-    Flag = "AutoSellAura",
+    Flag = "AutoSellCrusher",
     Callback = function(value)
-        _G.AutoSellAura = value
+        _G.AutoSellCrusher = value
     end
 })
 
-_G.AutoSellAura = false
+_G.AutoSellCrusher = false
 
--- SERVICES
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
+-- CONFIGURATION DU CRUSHER
+local crusher = workspace:WaitForChild("Map"):WaitForChild("Crusher")
+local hitbox = crusher:WaitForChild("Hitbox")
+local prompt = hitbox:WaitForChild("ProximityPrompt")
 
-local function getCharacter()
-    return player.Character or player.CharacterAdded:Wait()
+for _, obj in ipairs(crusher:GetDescendants()) do
+    if obj:IsA("BasePart") then
+        obj.Transparency = 1
+        obj.CanCollide = false
+        obj.Anchored = true
+    end
 end
 
--- RÉFÉRENCE
-local crusherHitbox = workspace:WaitForChild("Map"):WaitForChild("Crusher"):WaitForChild("Hitbox")
-local prompt = crusherHitbox:WaitForChild("ProximityPrompt")
-
--- CONFIG HITBOX
-crusherHitbox.Transparency = 1
-crusherHitbox.CanCollide = false
-crusherHitbox.Anchored = true
-
--- CONFIG PROMPT
-prompt.Enabled = true
+-- PROMPT INVISIBLE
 prompt.MaxActivationDistance = math.huge
 prompt.HoldDuration = 0
 prompt.ActionText = ""
 prompt.ObjectText = ""
 prompt.Visible = false
 
--- LOOP POUR POSITIONNER LA HITBOX DEVANT LE JOUEUR
-RunService.RenderStepped:Connect(function()
-    if _G.AutoSellAura then
-        local char = getCharacter()
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local frontPos = hrp.CFrame.Position + (hrp.CFrame.LookVector * 2)
-            crusherHitbox.CFrame = CFrame.new(frontPos)
+-- POSITION DEVANT LE JOUEUR
+game:GetService("RunService").RenderStepped:Connect(function()
+    if _G.AutoSellCrusher then
+        local char = player.Character
+        if char then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp and crusher.PrimaryPart then
+                local frontPos = hrp.CFrame.Position + (hrp.CFrame.LookVector * 2)
+                crusher:SetPrimaryPartCFrame(CFrame.new(frontPos))
+            end
         end
     end
 end)
 
--- LOOP POUR SPAM LE PROXIMITY PROMPT
+-- SPAM DU PROXIMITY PROMPT
 task.spawn(function()
     while true do
-        if _G.AutoSellAura then
+        if _G.AutoSellCrusher then
             pcall(function()
                 fireproximityprompt(prompt)
             end)
         end
-        task.wait(0.5)
+        task.wait(0.05)
     end
 end)
