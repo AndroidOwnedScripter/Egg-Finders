@@ -52,7 +52,7 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(0.2)
+        task.wait(1.2)
     end
 end)
 
@@ -253,7 +253,7 @@ local MegaIndexToggle = MainTab:CreateToggle({
             print("✅ Mega Index activé")
         else
             -- Rétablir taille normale
-            indexArea.Size = Vector3.new(20, 20, 20) -- adapte selon la taille originale
+            indexArea.Size = Vector3.new(10.88, 8.65, 10.65) -- adapte selon la taille originale
             indexArea.Transparency = 1
             indexArea.CanCollide = false
             indexArea.Anchored = true
