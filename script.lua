@@ -56,55 +56,44 @@ task.spawn(function()
     end
 end)
 
+
 --==================================================
--- MAIN TAB — AUTO INDEX
+-- MAIN TAB — AUTO INDEX (inchangé)
 --==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
 
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "broken auto find egg",
+    Name = "auto find egg",
     CurrentValue = false,
     Flag = "AutoIndex",
     Callback = function() end
 })
 
 --==================================================
--- 🥚 WHITELIST DES ŒUFS (TA LISTE FINALE)
+-- 🥚 PRIORITY LIST DES ŒUFS
 --==================================================
-local AllowedEggs = {
-    ["Money"]=true,["Tix"]=true,["Rich"]=true,["Timeless"]=true,["Grunch"]=true,
-    ["Richest"]=true,["Mustard"]=true,["Chiken Stars"]=true,["Fake God"]=true,
-    ["London"]=true,["Celebration"]=true,["Mango"]=true,["Crabegg PRIME"]=true,
-    ["2025 Meme Trophy"]=true,["Reverie"]=true,["Seraphim"]=true,["Winning Egg"]=true,
-    ["Admegg"]=true,["Capybaregg"]=true,["JackoLantegg"]=true,["Doodle’s"]=true,
-    ["Veri Epik Eg"]=true,["StarFall"]=true,["Shiny Quantum"]=true,["Malware"]=true,
-    ["Quantum"]=true,["G̶l̷i̷t̸c̷h̷e̴d̸ ̸F̵r̴a̶g̸m̷e̸n̵t̴"]=true,
-    ["ERR0R"]=true,["God"]=true,["Angel"]=true,["Alien"]=true,["Evil"]=true,
-    ["Golden Santegg"]=true,["Ice Candy"]=true,["Matterless"]=true,["Royal"]=true,
-    ["Santegg"]=true,["Ruby Faberge"]=true,["Cerials"]=true,["Sapphire"]=true,
-    ["Darkness"]=true,["Gingerbread"]=true,["Infinitegg"]=true,["Rudolf"]=true,
-    ["Ruby"]=true,["Blackhole"]=true,["Burger"]=true,["Layered"]=true,
-    ["Golden Ornament"]=true,["Draculegg"]=true,["DogEgg"]=true,["Bellegg"]=true,
-    ["Super Ghost"]=true,["Paradox"]=true,["Holy"]=true,["Squid"]=true,["Grave"]=true,
-    ["Shiny Golden"]=true,["Golden"]=true,["Blue Ornament"]=true,
-    ["Green Ornament"]=true,["Red Ornament"]=true,["RoEgg"]=true,
-    ["Shiny Blueberregg"]=true,["Nutcracker"]=true,["Blueberregg"]=true,
-    ["Hellish"]=true,["Crabegg"]=true,["CartRide"]=true,["Appegg"]=true,
-    ["Witch"]=true,["Ice"]=true,["Eggday"]=true,["Sun"]=true,["Orangegg"]=true,
-    ["Candle"]=true,["Electricitegg"]=true,["Banana"]=true,["Shiny Rategg"]=true,
-    ["Rategg"]=true,["Corrupted"]=true,["Iglegg"]=true,["Cheese"]=true,
-    ["Magma"]=true,["Wild"]=true,["Core"]=true,["Crow"]=true,["Seedlegg"]=true,
-    ["Paintegg"]=true,["Eg"]=true,["Pull"]=true,["Bee"]=true,["Frogg"]=true,
-    ["Angry"]=true,["Shiny Wategg"]=true,["Elf"]=true,["Fruitcake"]=true,
-    ["Wegg"]=true,["Pouch"]=true,["Bategg"]=true,["Shiny Fire"]=true,
-    ["Zombegg"]=true,["Snowglobe"]=true,["Mummy"]=true,
-    ["Shiny Ghost"]=true,["Penguin Egg"]=true,
-    ["Colorful Lights"]=true,["Spidegg"]=true,["Shiny Iron"]=true,
-    ["Skeleton"]=true,["Shiny Fish"]=true,["Candy Corn"]=true,["Pumpegg"]=true,
-    ["Wreath"]=true,["Shiny Glass"]=true,["Orange"]=true,
-    ["Shiny Corroded"]=true,["Festive Egg"]=true,["Shiny Grass"]=true,
-    ["Shiny Egg"]=true
+local EggPriority = {
+    "Malware","Quantum","ERR0R","Shiny Quantum","Shiny Golden","Shiny Blueberregg",
+    "Shiny Rategg","Shiny Wategg","Shiny Fire","Shiny Ghost","Shiny Iron","Shiny Fish",
+    "Shiny Glass","Shiny Corroded","Shiny Grass","Shiny Egg","Angel","Golden Santegg",
+    "Ice Candy","Santegg","Gingerbread","Nutcracker","Elf","Fruitcake","Penguin Egg",
+    "Evil","Cerials","Draculegg","Grave","Hellish","Witch","Zombegg","Candy Corn",
+    "Spidegg","Skeleton","Pumpegg","Orange","God","Alien","Matterless","Royal",
+    "Ruby Faberge","Sapphire","Darkness","Infinitegg","Ruby","Blackhole","Burger",
+    "Layered","Mustard","Chiken Stars","Fake God","London","Mango","Crabegg PRIME",
+    "Money","Tix","Rich","Timeless","Grunch","Richest","Celebration","2025 Meme Trophy",
+    "Reverie","Seraphim","Winning Egg","Admegg","Capybaregg","JackoLantegg","Doodle’s",
+    "Veri Epik Eg","StarFall","DogEgg","Super Ghost","Paradox","Holy","Squid","Golden",
+    "RoEgg","Blueberregg","Crabegg","CartRide","Appegg","Ice","Eggday","Sun","Orangegg",
+    "Electricitegg","Banana","Corrupted","Iglegg","Cheese","Magma","Wild","Core","Seedlegg",
+    "Paintegg","Eg","Pull","Bee","Frogg","Angry"
 }
+
+-- Pour lookup rapide
+local AllowedEggs = {}
+for i, name in ipairs(EggPriority) do
+    AllowedEggs[name] = i -- la valeur = priorité
+end
 
 --==================================================
 -- PATHFINDING MOVE (INCHANGÉ)
@@ -133,7 +122,7 @@ local function moveToPosition(humanoid, hrp, destination)
 end
 
 --==================================================
--- AUTO INDEX LOOP (WHITELIST)
+-- AUTO INDEX LOOP (PRIORITY + CLICK)
 --==================================================
 task.spawn(function()
     while true do
@@ -143,55 +132,51 @@ task.spawn(function()
             local humanoid = char:WaitForChild("Humanoid")
 
             local eggsFolder = workspace:FindFirstChild("Eggs")
-            local indexArea = workspace.Map
-                and workspace.Map:FindFirstChild("Index")
-                and workspace.Map.Index:FindFirstChild("IndexArea")
+            if eggsFolder then
 
-            if eggsFolder and indexArea then
+                -- Cherche l’œuf le plus prioritaire actuellement présent
+                local targetEgg = nil
+                local highestPriority = math.huge
                 for _, egg in ipairs(eggsFolder:GetChildren()) do
                     if not AutoIndexToggle.CurrentValue then break end
                     if not AllowedEggs[egg.Name] then continue end
-                    if not (egg:IsA("Model") or egg:IsA("MeshPart")) then continue end
-
-                    local eggPart = egg:IsA("Model")
-                        and (egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart", true))
-                        or egg
-                    if not eggPart then continue end
-
-                    local clickDetector = egg:FindFirstChildWhichIsA("ClickDetector", true)
-                    if not clickDetector then continue end
-
-                    -- 🧭 WALK TO EGG
-                    moveToPosition(humanoid, hrp, eggPart.Position)
-
-                    while AutoIndexToggle.CurrentValue and egg.Parent do
-                        if (hrp.Position - eggPart.Position).Magnitude <= 4 then break end
-                        task.wait(0.1)
+                    local prio = AllowedEggs[egg.Name]
+                    if prio < highestPriority then
+                        targetEgg = egg
+                        highestPriority = prio
                     end
+                end
 
-                    if not egg.Parent then break end
+                if targetEgg then
+                    local eggPart = targetEgg:IsA("Model")
+                        and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
+                        or targetEgg
+                    if eggPart then
+                        local clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
+                        if clickDetector then
 
-                    -- 🖱️ CLICK
-                    fireclickdetector(clickDetector)
-                    task.wait(0.2)
+                            -- 🧭 Walk to egg
+                            moveToPosition(humanoid, hrp, eggPart.Position)
 
-                    -- 🧭 WALK TO INDEX
-                    moveToPosition(humanoid, hrp, indexArea.Position)
+                            -- Attendre proche
+                            while AutoIndexToggle.CurrentValue and targetEgg.Parent do
+                                if (hrp.Position - eggPart.Position).Magnitude <= 4 then break end
+                                task.wait(0.1)
+                            end
 
-                    local start = tick()
-                    while AutoIndexToggle.CurrentValue and egg.Parent and tick() - start < 6 do
-                        task.wait(0.1)
+                            if targetEgg.Parent then
+                                -- 🖱️ Click
+                                fireclickdetector(clickDetector)
+                                task.wait(0.2)
+                            end
+                        end
                     end
-
-                    task.wait(1)
-                    break
                 end
             end
         end
         task.wait(0.3)
     end
 end)
-
 
 -- Mega index
 local MegaIndexToggle = MainTab:CreateToggle({
