@@ -58,12 +58,7 @@ end)
 
 
 --==================================================
--- MAIN TAB — AUTO FIND EGG + AUTO SELL (PATHFINDING DYNAMIQUE)
---==================================================
-local MainTab = Window:CreateTab("Main", 4483362458)
-
---==================================================
--- AUTO FIND EGG + SELL (FALLBACK DIRECT + NOCLIP + SPAM MACHINE)
+-- AUTO FIND EGG + SELL (CLICK-TO-MOVE + SPAM MACHINE)
 --==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto find egg + sell",
@@ -100,7 +95,8 @@ end
 --==================================================
 -- SERVICES
 --==================================================
-local player = game:GetService("Players").LocalPlayer
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 
 local function getChar()
     return player.Character or player.CharacterAdded:Wait()
@@ -119,9 +115,9 @@ local function noclip(enable)
 end
 
 --==================================================
--- MOVE DIRECT + FALLBACK + NOCLIP
+-- CLICK-TO-MOVE + Fallback
 --==================================================
-local function fallbackMove(h, hrp, getDestination)
+local function clickToMove(h, hrp, destination)
     noclip(true)
     h.PlatformStand = false
     h.AutoRotate = true
@@ -129,14 +125,11 @@ local function fallbackMove(h, hrp, getDestination)
     local stuckTimer = 0
     local lastPos = hrp.Position
 
-    while AutoIndexToggle.CurrentValue do
-        local dest = getDestination()
-        if not dest then break end
-
-        h:MoveTo(dest)
+    while AutoIndexToggle.CurrentValue and destination do
+        h:MoveTo(destination)
         h.MoveToFinished:Wait(1.5)
 
-        -- détection blocage
+        -- mini TP si bloqué
         if (hrp.Position - lastPos).Magnitude < 1 then
             stuckTimer += 1
         else
@@ -144,21 +137,20 @@ local function fallbackMove(h, hrp, getDestination)
         end
         lastPos = hrp.Position
 
-        -- mini TP si bloqué
         if stuckTimer >= 3 then
-            hrp.CFrame = CFrame.new(dest + Vector3.new(0,3,0))
+            hrp.CFrame = CFrame.new(destination + Vector3.new(0,3,0))
             stuckTimer = 0
         end
 
-        -- si proche de la destination, fin
-        if (hrp.Position - dest).Magnitude < 5 then break end
-        task.wait(0.1)
+        if (hrp.Position - destination).Magnitude < 5 then break end
+        task.wait(0.05)
     end
+
     noclip(false)
 end
 
 --==================================================
--- AUTO FIND EGG + SELL LOOP AVEC SPAM MACHINE
+-- LOOP PRINCIPAL AUTO FIND EGG + SELL
 --==================================================
 task.spawn(function()
     while true do
@@ -170,7 +162,7 @@ task.spawn(function()
             local eggsFolder = workspace:FindFirstChild("Eggs")
             if not eggsFolder then task.wait(0.3) continue end
 
-            -- choisir meilleur œuf
+            -- sélectionner œuf prioritaire
             local target, bestPrio = nil, math.huge
             for _, egg in ipairs(eggsFolder:GetChildren()) do
                 local p = AllowedEggs[egg.Name]
@@ -191,23 +183,19 @@ task.spawn(function()
             local clickDetector = target:FindFirstChildWhichIsA("ClickDetector", true)
             if not (eggPart and clickDetector) then task.wait(0.3) continue end
 
-            -- déplacement fallback direct + noclip
-            fallbackMove(humanoid, hrp, function()
-                return target.Parent and eggPart.Position or nil
-            end)
+            -- déplacement vers l’œuf
+            clickToMove(humanoid, hrp, eggPart.Position)
 
             -- clic sur l’œuf
             if target.Parent then
                 fireclickdetector(clickDetector)
                 task.wait(0.2)
 
-                -- aller vers la machine pour vendre
+                -- déplacement vers la machine
                 local prompt = workspace.Map.Crusher.Hitbox:WaitForChild("ProximityPrompt")
-                fallbackMove(humanoid, hrp, function()
-                    return prompt.Parent.Position
-                end)
+                clickToMove(humanoid, hrp, prompt.Parent.Position)
 
-                -- spam du ProximityPrompt tant qu’on est proche
+                -- spam ProximityPrompt tant qu’on est proche
                 task.spawn(function()
                     while (hrp.Position - prompt.Parent.Position).Magnitude <= 7 and AutoIndexToggle.CurrentValue do
                         pcall(function()
@@ -222,6 +210,7 @@ task.spawn(function()
         end
     end
 end)
+
 
 
 -- Mega index
