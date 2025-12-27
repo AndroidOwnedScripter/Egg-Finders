@@ -69,13 +69,13 @@ local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto find egg + sell",
     CurrentValue = false,
     Flag = "AutoIndex",
-    Callback = function(value)
-        _G.AutoSellEggs = value
+    Callback = function(v)
+        _G.AutoSellEggs = v
     end
 })
 
 --==================================================
--- 🥚 PRIORITY LIST DES ŒUFS
+-- 🥚 PRIORITY LIST
 --==================================================
 local EggPriority = {
     "Malware","Quantum","ERR0R","Shiny Quantum","Shiny Golden","Shiny Blueberregg",
@@ -95,8 +95,8 @@ local EggPriority = {
 }
 
 local AllowedEggs = {}
-for i, name in ipairs(EggPriority) do
-    AllowedEggs[name] = i
+for i,v in ipairs(EggPriority) do
+    AllowedEggs[v] = i
 end
 
 --==================================================
@@ -106,152 +106,73 @@ local Players = game:GetService("Players")
 local PathfindingService = game:GetService("PathfindingService")
 local player = Players.LocalPlayer
 
-local function getCharacter()
+local function getChar()
     return player.Character or player.CharacterAdded:Wait()
 end
 
 --==================================================
--- 🛠️ HUMANOID FIX (OBLIGATOIRE)
+-- 🛠️ HUMANOID FIX
 --==================================================
-local function prepareHumanoid(humanoid, hrp)
-    humanoid.PlatformStand = false
-    humanoid.AutoRotate = true
+local function prepareHumanoid(h, hrp)
+    h.PlatformStand = false
+    h.AutoRotate = true
     hrp.Anchored = false
 end
 
 --==================================================
--- 🧠 SMART PATHFINDING (FIX DÉPLACEMENT)
+-- 🧠 SMART MOVE + FALLBACK
 --==================================================
-local function smartGoTo(humanoid, hrp, getDestination)
-    prepareHumanoid(humanoid, hrp)
+local function smartGoTo(h, hrp, getDestination)
+    prepareHumanoid(h, hrp)
+
+    local stuckTimer = 0
+    local lastPos = hrp.Position
 
     while AutoIndexToggle.CurrentValue do
         local dest = getDestination()
         if not dest then return end
 
-        local path = PathfindingService:CreatePath({
-            AgentRadius = 2,
-            AgentHeight = 5,
-            AgentCanJump = true,
-            AgentJumpHeight = 7,
-            AgentMaxSlope = 45
-        })
-
+        -- ① PATHFINDING
+        local path = PathfindingService:CreatePath()
         path:ComputeAsync(hrp.Position, dest)
-        if path.Status ~= Enum.PathStatus.Success then
-            task.wait(0.2)
-            continue
-        end
 
-        for _, wp in ipairs(path:GetWaypoints()) do
-            if not AutoIndexToggle.CurrentValue then return end
-
-            humanoid:MoveTo(wp.Position)
-            if wp.Action == Enum.PathWaypointAction.Jump then
-                humanoid.Jump = true
-            end
-
-            local reached = humanoid.MoveToFinished:Wait()
-            if not reached then
-                break -- recalcul si bloqué
-            end
-        end
-
-        task.wait(0.05)
-    end
-end
-
---==================================================
--- 💰 AUTO SELL
---==================================================
-local SELL_DELAY = 0.1
-local prompt = workspace.Map.Crusher.Hitbox:WaitForChild("ProximityPrompt")
-prompt.MaxActivationDistance = math.huge
-prompt.HoldDuration = 0
-
-if not fireproximityprompt then
-    warn("fireproximityprompt non supporté")
-end
-
-_G.AutoSellEggs = false
-
-task.spawn(function()
-    while true do
-        if _G.AutoSellEggs then
-            pcall(function()
-                fireproximityprompt(prompt)
-            end)
-        end
-        task.wait(SELL_DELAY)
-    end
-end)
-
---==================================================
--- 🤖 AUTO FIND EGG + SELL
---==================================================
-task.spawn(function()
-    while true do
-        if AutoIndexToggle.CurrentValue then
-            local char = getCharacter()
-            local humanoid = char:WaitForChild("Humanoid")
-            local hrp = char:WaitForChild("HumanoidRootPart")
-
-            local eggsFolder = workspace:FindFirstChild("Eggs")
-            if not eggsFolder then
-                task.wait(0.3)
-                continue
-            end
-
-            -- 🥇 meilleur œuf par priorité
-            local function getBestEgg()
-                local best, prio = nil, math.huge
-                for _, egg in ipairs(eggsFolder:GetChildren()) do
-                    local p = AllowedEggs[egg.Name]
-                    if p and p < prio then
-                        best, prio = egg, p
-                    end
+        if path.Status == Enum.PathStatus.Success then
+            for _,wp in ipairs(path:GetWaypoints()) do
+                if not AutoIndexToggle.CurrentValue then return end
+                h:MoveTo(wp.Position)
+                if wp.Action == Enum.PathWaypointAction.Jump then
+                    h.Jump = true
                 end
-                return best
-            end
 
-            local targetEgg = getBestEgg()
-            if not targetEgg then
-                task.wait(0.3)
-                continue
-            end
-
-            local eggPart =
-                targetEgg:IsA("Model")
-                and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
-                or targetEgg
-
-            local clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
-            if not (eggPart and clickDetector) then
-                task.wait(0.3)
-                continue
-            end
-
-            -- 🚶 ALLER À L’ŒUF
-            smartGoTo(humanoid, hrp, function()
-                if not targetEgg.Parent then return nil end
-                return eggPart.Position
-            end)
-
-            if targetEgg.Parent then
-                fireclickdetector(clickDetector)
-                task.wait(0.2)
-
-                -- 🚚 ALLER À LA MACHINE
-                smartGoTo(humanoid, hrp, function()
-                    return prompt.Parent.Position
-                end)
+                local reached = h.MoveToFinished:Wait(1.5)
+                if not reached then break end
             end
         else
-            task.wait(0.1)
+            -- ② FALLBACK SAFE : marche directe
+            h:MoveTo(dest)
+            h.MoveToFinished:Wait(1.5)
         end
-    end
-end)
 
+        -- détection blocage
+        if (hrp.Position - lastPos).Magnitude < 1 then
+            stuckTimer += 1
+        else
+            stuckTimer = 0
+        end
+        lastPos = hrp.Position
+
+        -- ③ FALLBACK HARD : mini TP soft
+        if stuckTimer >= 3 then
+            hrp.CFrame = CFrame.new(dest + Vector3.new(0, 3, 0))
+            stuckTimer = 0
+        end
+
+        if (hrp.Position - dest).Magnitude < 5 then
+            return
+        end
+
+        task.wait(0.1)
+    end
 
 -- Mega index
 local MegaIndexToggle = MainTab:CreateToggle({
