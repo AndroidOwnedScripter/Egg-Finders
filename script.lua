@@ -5,11 +5,8 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
     Name = "Egg Finders",
-    Icon = 0,
     LoadingTitle = "Egg Finders",
     LoadingSubtitle = "AndroidOwnedScripter",
-    ShowText = "Rayfield",
-    Theme = "Default",
     ToggleUIKeybind = "K",
 })
 
@@ -27,13 +24,12 @@ end
 --==================================================
 -- EVENT TAB — AUTO ORB (INCHANGÉ)
 --==================================================
-local EventTab = Window:CreateTab("Event", 4483362458)
+local EventTab = Window:CreateTab("Event")
 
 local AutoOrbToggle = EventTab:CreateToggle({
     Name = "Auto Orb [❄️]",
     CurrentValue = false,
-    Flag = "AutoOrb",
-    Callback = function() end
+    Flag = "AutoOrb"
 })
 
 task.spawn(function()
@@ -41,10 +37,10 @@ task.spawn(function()
         if AutoOrbToggle.CurrentValue then
             local char = getCharacter()
             local hrp = char:WaitForChild("HumanoidRootPart")
-            local orbsFolder = workspace:FindFirstChild("Orbs")
+            local orbs = workspace:FindFirstChild("Orbs")
 
-            if orbsFolder then
-                for _, orb in ipairs(orbsFolder:GetChildren()) do
+            if orbs then
+                for _, orb in ipairs(orbs:GetChildren()) do
                     if orb:IsA("BasePart") and orb.Name == "ItemOrb" then
                         hrp.CFrame = orb.CFrame + Vector3.new(0, 3, 0)
                         break
@@ -59,16 +55,27 @@ end)
 --==================================================
 -- MAIN TAB
 --==================================================
-local MainTab = Window:CreateTab("Main", 4483362458)
+local MainTab = Window:CreateTab("Main")
 
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "auto find egg + sell",
+    Name = "Auto Index",
     CurrentValue = false,
     Flag = "AutoIndex",
     Callback = function(v)
         _G.AutoSellEggs = v
     end
 })
+
+local MegaIndexToggle = MainTab:CreateToggle({
+    Name = "Mega Index",
+    CurrentValue = false,
+    Flag = "MegaIndex",
+    Callback = function(v)
+        _G.MegaIndex = v
+    end
+})
+
+_G.MegaIndex = false
 
 --==================================================
 -- 🥚 PRIORITY LIST
@@ -91,8 +98,8 @@ local EggPriority = {
 }
 
 local AllowedEggs = {}
-for i, n in ipairs(EggPriority) do
-    AllowedEggs[n] = i
+for i, name in ipairs(EggPriority) do
+    AllowedEggs[name] = i
 end
 
 --==================================================
@@ -115,57 +122,47 @@ task.spawn(function()
 end)
 
 --==================================================
--- PATHFINDING (FINAL & STABLE)
+-- PATHFINDING (FINAL STABLE)
 --==================================================
 local function moveToDestination(humanoid, hrp, getTargetPos, abortCheck)
-    local lastRepath = 0
+    local targetPos = getTargetPos()
+    if not targetPos then return false end
 
-    while AutoIndexToggle.CurrentValue do
-        if abortCheck and abortCheck() then return false end
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 3,
+        AgentHeight = 6,
+        AgentCanJump = true,
+        AgentJumpHeight = 10,
+        AgentMaxSlope = 50
+    })
 
-        local targetPos = getTargetPos()
-        if not targetPos then return false end
+    path:ComputeAsync(hrp.Position, targetPos)
+    if path.Status ~= Enum.PathStatus.Success then
+        return false
+    end
 
-        if tick() - lastRepath < 0.25 then
-            task.wait(0.05)
-            continue
-        end
-        lastRepath = tick()
-
-        local path = PathfindingService:CreatePath({
-            AgentRadius = 3,
-            AgentHeight = 6,
-            AgentCanJump = true,
-            AgentJumpHeight = 10,
-            AgentMaxSlope = 50
-        })
-
-        path:ComputeAsync(hrp.Position, targetPos)
-        if path.Status ~= Enum.PathStatus.Success then
-            task.wait(0.1)
-            continue
+    for _, wp in ipairs(path:GetWaypoints()) do
+        if not (AutoIndexToggle.CurrentValue or _G.MegaIndex) then
+            return false
         end
 
-        for _, wp in ipairs(path:GetWaypoints()) do
-            if abortCheck and abortCheck() then return false end
-            humanoid:MoveTo(wp.Position)
-            if wp.Action == Enum.PathWaypointAction.Jump then
-                humanoid.Jump = true
-            end
-
-            local timeout = tick() + 1
-            while (hrp.Position - wp.Position).Magnitude > 2 do
-                if abortCheck and abortCheck() then return false end
-                if tick() > timeout then break end
-                task.wait(0.05)
-            end
+        if abortCheck and abortCheck() then
+            return false
         end
 
-        if (hrp.Position - targetPos).Magnitude <= 4 then
-            return true
+        humanoid:MoveTo(wp.Position)
+
+        if wp.Action == Enum.PathWaypointAction.Jump then
+            humanoid.Jump = true
+        end
+
+        local reached = humanoid.MoveToFinished:Wait(1.5)
+        if not reached then
+            return false -- bloqué → recalcul
         end
     end
-    return false
+
+    return true
 end
 
 --==================================================
@@ -173,46 +170,44 @@ end
 --==================================================
 task.spawn(function()
     while true do
-        if AutoIndexToggle.CurrentValue then
+        if AutoIndexToggle.CurrentValue or _G.MegaIndex then
             local char = getCharacter()
             local hrp = char:WaitForChild("HumanoidRootPart")
             local humanoid = char:WaitForChild("Humanoid")
             local eggsFolder = workspace:FindFirstChild("Eggs")
 
             if eggsFolder then
-                local function getBestEgg()
-                    local best, prio = nil, math.huge
-                    for _, e in ipairs(eggsFolder:GetChildren()) do
-                        if AllowedEggs[e.Name] and AllowedEggs[e.Name] < prio then
-                            best = e
-                            prio = AllowedEggs[e.Name]
-                        end
+                local bestEgg, bestPrio = nil, math.huge
+                for _, egg in ipairs(eggsFolder:GetChildren()) do
+                    if AllowedEggs[egg.Name] and AllowedEggs[egg.Name] < bestPrio then
+                        bestEgg = egg
+                        bestPrio = AllowedEggs[egg.Name]
                     end
-                    return best
                 end
 
-                local egg = getBestEgg()
-                if egg then
-                    local part = egg:IsA("Model") and (egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart", true)) or egg
-                    local click = egg:FindFirstChildWhichIsA("ClickDetector", true)
+                if bestEgg then
+                    local part = bestEgg:IsA("Model")
+                        and (bestEgg.PrimaryPart or bestEgg:FindFirstChildWhichIsA("BasePart", true))
+                        or bestEgg
+                    local click = bestEgg:FindFirstChildWhichIsA("ClickDetector", true)
 
                     if part and click then
                         local reached = moveToDestination(
                             humanoid,
                             hrp,
                             function() return part.Position end,
-                            function() return not egg.Parent end
+                            function() return not bestEgg.Parent end
                         )
 
-                        if reached and egg.Parent then
+                        if reached and bestEgg.Parent then
                             fireclickdetector(click)
-                            task.wait(0.2)
+                            task.wait(0.25)
 
                             moveToDestination(
                                 humanoid,
                                 hrp,
                                 function() return prompt.Parent.Position end,
-                                function() return not egg.Parent end
+                                function() return false end
                             )
                         end
                     end
