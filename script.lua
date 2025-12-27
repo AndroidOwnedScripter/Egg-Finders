@@ -296,7 +296,7 @@ end)
 
 
 --==================================================
--- EGG PULL TOGGLE
+-- EGG PULL TOGGLE 
 --==================================================
 local EggPullToggle = MainTab:CreateToggle({
     Name = "Egg Pull",
@@ -308,8 +308,7 @@ local EggPullToggle = MainTab:CreateToggle({
 })
 
 _G.EggPull = false
-
-local PULL_SPEED = 5 -- studs par frame (à ajuster)
+local PULL_SPEED = 10 -- studs par frame (à ajuster)
 
 task.spawn(function()
     while true do
@@ -327,16 +326,20 @@ task.spawn(function()
                     end
 
                     if eggPart and egg.Parent then
-                        local dist = (hrp.Position - eggPart.Position).Magnitude
+                        -- désancrer pour permettre le mouvement
+                        eggPart.Anchored = false
+
+                        local dir = hrp.Position - eggPart.Position
+                        local dist = dir.Magnitude
+
                         if dist > 2 then
-                            local dir = (hrp.Position - eggPart.Position).Unit
+                            dir = dir.Unit
                             eggPart.CFrame = eggPart.CFrame + dir * math.min(PULL_SPEED, dist)
                         end
                     end
                 end
             end
         end
-        task.wait(0.05)
+        task.wait(0.03) -- update plus fluide
     end
 end)
-
