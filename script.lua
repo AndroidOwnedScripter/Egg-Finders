@@ -58,7 +58,7 @@ end)
 
 
 --==================================================
--- MAIN TAB — AUTO INDEX
+-- MAIN TAB — AUTO FIND EGG (REACTIF)
 --==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
 
@@ -89,36 +89,39 @@ local EggPriority = {
     "Paintegg","Eg","Pull","Bee","Frogg","Angry","Grass"
 }
 
--- Pour lookup rapide (priorité)
 local AllowedEggs = {}
 for i, name in ipairs(EggPriority) do
     AllowedEggs[name] = i
 end
 
 --==================================================
--- PATHFINDING MOVE
+-- SERVICES & UTILS
 --==================================================
-local function moveToPosition(humanoid, hrp, destination)
-    local path = PathfindingService:CreatePath({
-        AgentRadius = 2,
-        AgentHeight = 5,
-        AgentCanJump = true,
-        AgentJumpHeight = 7,
-        AgentMaxSlope = 45
-    })
+local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
+local player = Players.LocalPlayer
 
-    path:ComputeAsync(hrp.Position, destination)
-    if path.Status ~= Enum.PathStatus.Success then return false end
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
 
-    for _, wp in ipairs(path:GetWaypoints()) do
-        if not AutoIndexToggle.CurrentValue then return false end
-        humanoid:MoveTo(wp.Position)
-        if wp.Action == Enum.PathWaypointAction.Jump then
-            humanoid.Jump = true
+--==================================================
+-- SUIVI RÉACTIF
+--==================================================
+local function followTargetRealtime(humanoid, hrp, getDestination)
+    local running = true
+    task.spawn(function()
+        while running and AutoIndexToggle.CurrentValue do
+            local dest = getDestination()
+            if dest and (hrp.Position - dest).Magnitude > 2 then
+                humanoid:MoveTo(dest)
+            end
+            task.wait(0.05)
         end
-        humanoid.MoveToFinished:Wait()
-    end
-    return true
+    end)
+    return {
+        Stop = function() running = false end
+    }
 end
 
 --==================================================
@@ -130,79 +133,66 @@ task.spawn(function()
             local char = getCharacter()
             local hrp = char:WaitForChild("HumanoidRootPart")
             local humanoid = char:WaitForChild("Humanoid")
-
             local eggsFolder = workspace:FindFirstChild("Eggs")
             if eggsFolder then
 
-                -- Cherche l’œuf le plus prioritaire actuellement présent
-                local targetEgg = nil
-                local highestPriority = math.huge
-                for _, egg in ipairs(eggsFolder:GetChildren()) do
-                    if not AutoIndexToggle.CurrentValue then break end
-                    if not AllowedEggs[egg.Name] then continue end
-                    local prio = AllowedEggs[egg.Name]
-                    if prio < highestPriority then
-                        targetEgg = egg
-                        highestPriority = prio
+                -- Fonction pour récupérer l’œuf le plus prioritaire
+                local function getHighestPriorityEgg()
+                    local target = nil
+                    local bestPrio = math.huge
+                    for _, egg in ipairs(eggsFolder:GetChildren()) do
+                        if AllowedEggs[egg.Name] then
+                            local prio = AllowedEggs[egg.Name]
+                            if prio < bestPrio then
+                                target = egg
+                                bestPrio = prio
+                            end
+                        end
                     end
+                    return target, bestPrio
                 end
 
+                local targetEgg, highestPriority = getHighestPriorityEgg()
                 if targetEgg then
                     local eggPart = targetEgg:IsA("Model")
                         and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
                         or targetEgg
-                    if eggPart then
-                        local clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
-                        if clickDetector then
+                    local clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
 
-                            -- 🧭 Walk to egg avec reprise si le joueur bouge
-                            local targetPos = eggPart.Position
-                            while AutoIndexToggle.CurrentValue and targetEgg.Parent do
-                                -- Vérifier si un œuf plus prioritaire apparaît
-                                local newTarget = nil
-                                local newHighestPriority = highestPriority
-                                for _, egg2 in ipairs(eggsFolder:GetChildren()) do
-                                    if not AllowedEggs[egg2.Name] then continue end
-                                    local prio2 = AllowedEggs[egg2.Name]
-                                    if prio2 < newHighestPriority then
-                                        newTarget = egg2
-                                        newHighestPriority = prio2
-                                    end
-                                end
-                                if newTarget and newTarget ~= targetEgg then
-                                    targetEgg = newTarget
-                                    eggPart = targetEgg:IsA("Model")
-                                        and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
-                                        or targetEgg
-                                    clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
-                                    targetPos = eggPart.Position
-                                end
+                    if eggPart and clickDetector then
+                        -- Suivi réactif
+                        local followEgg = followTargetRealtime(humanoid, hrp, function()
+                            return eggPart.Position
+                        end)
 
-                                -- Si proche, break
-                                if (hrp.Position - targetPos).Magnitude <= 4 then break end
-
-                                -- Bouger vers l’œuf
-                                moveToPosition(humanoid, hrp, targetPos)
-
-                                -- Recalculer position si l’œuf a bougé
-                                if eggPart.Position ~= targetPos then
-                                    targetPos = eggPart.Position
-                                end
-
-                                task.wait(0.1)
+                        -- Attendre d’être proche
+                        while (hrp.Position - eggPart.Position).Magnitude > 4 and targetEgg.Parent and AutoIndexToggle.CurrentValue do
+                            -- Vérifier si un œuf plus prioritaire apparaît
+                            local newTarget, newPriority = getHighestPriorityEgg()
+                            if newTarget and newPriority < highestPriority then
+                                targetEgg = newTarget
+                                eggPart = targetEgg:IsA("Model")
+                                    and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
+                                    or targetEgg
+                                clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
+                                highestPriority = newPriority
                             end
+                            task.wait(0.05)
+                        end
 
-                            if targetEgg.Parent then
-                                -- 🖱️ Click
-                                fireclickdetector(clickDetector)
-                                task.wait(0.2)
-                            end
+                        -- Stop suivi œuf
+                        followEgg:Stop()
+
+                        -- Click sur l’œuf
+                        if targetEgg.Parent then
+                            fireclickdetector(clickDetector)
+                            task.wait(0.2)
                         end
                     end
                 end
             end
         end
-        task.wait(0.3)
+        task.wait(0.1)
     end
 end)
 
