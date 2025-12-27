@@ -63,7 +63,7 @@ end)
 local MainTab = Window:CreateTab("Main", 4483362458)
 
 --==================================================
--- AUTO FIND EGG + SELL (FALLBACK DIRECT + NOCLIP + TOUS TYPES)
+-- AUTO FIND EGG + SELL (FALLBACK DIRECT + NOCLIP + SPAM MACHINE)
 --==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto find egg + sell",
@@ -150,7 +150,7 @@ local function fallbackMove(h, hrp, getDestination)
             stuckTimer = 0
         end
 
-        -- arrivé proche
+        -- si proche de la destination, fin
         if (hrp.Position - dest).Magnitude < 5 then break end
         task.wait(0.1)
     end
@@ -158,7 +158,7 @@ local function fallbackMove(h, hrp, getDestination)
 end
 
 --==================================================
--- AUTO FIND EGG + SELL LOOP
+-- AUTO FIND EGG + SELL LOOP AVEC SPAM MACHINE
 --==================================================
 task.spawn(function()
     while true do
@@ -205,6 +205,16 @@ task.spawn(function()
                 local prompt = workspace.Map.Crusher.Hitbox:WaitForChild("ProximityPrompt")
                 fallbackMove(humanoid, hrp, function()
                     return prompt.Parent.Position
+                end)
+
+                -- spam du ProximityPrompt tant qu’on est proche
+                task.spawn(function()
+                    while (hrp.Position - prompt.Parent.Position).Magnitude <= 7 and AutoIndexToggle.CurrentValue do
+                        pcall(function()
+                            fireproximityprompt(prompt)
+                        end)
+                        task.wait(0.1)
+                    end
                 end)
             end
         else
