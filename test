@@ -1,4 +1,31 @@
 --==================================================
+-- RAYFIELD
+--==================================================
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Egg Finders",
+    Icon = 0,
+    LoadingTitle = "Egg Finders",
+    LoadingSubtitle = "AndroidOwnedScripter",
+    ShowText = "Rayfield",
+    Theme = "Default",
+    ToggleUIKeybind = "K",
+})
+
+--==================================================
+-- SERVICES
+--==================================================
+local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
+
+local player = Players.LocalPlayer
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+
+--==================================================
 -- MAIN TAB — AUTO FIND EGG + AUTO SELL
 --==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
