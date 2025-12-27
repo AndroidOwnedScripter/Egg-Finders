@@ -290,6 +290,7 @@ task.spawn(function()
             -- Chercher tous les ClickDetectors dans la zone
             for _, obj in ipairs(workspace:GetDescendants()) do
                 if obj:IsA("ClickDetector") and obj.Parent then
+                    -- Fix : gère ClickDetector dans BasePart ou Model
                     local part = obj.Parent:IsA("BasePart") and obj.Parent or obj.Parent:FindFirstChildWhichIsA("BasePart", true)
                     if part and (part.Position - hrp.Position).Magnitude <= radius then
                         pcall(function()
@@ -302,3 +303,4 @@ task.spawn(function()
         task.wait(0.1) -- vitesse de spam
     end
 end)
+
