@@ -63,7 +63,7 @@ end)
 local MainTab = Window:CreateTab("Main", 4483362458)
 
 --==================================================
--- AUTO FIND EGG + SELL (FALLBACK DIRECT + NOCLIP)
+-- AUTO FIND EGG + SELL (FALLBACK DIRECT + NOCLIP + TOUS TYPES)
 --==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto find egg + sell",
@@ -74,7 +74,7 @@ local AutoIndexToggle = MainTab:CreateToggle({
     end
 })
 
--- liste des œufs reste inchangée
+-- liste des œufs inchangée
 local EggPriority = {
     "Malware","Quantum","ERR0R","Shiny Quantum","Shiny Golden","Shiny Blueberregg",
     "Shiny Rategg","Shiny Wategg","Shiny Fire","Shiny Ghost","Shiny Iron","Shiny Fish",
@@ -100,8 +100,7 @@ end
 --==================================================
 -- SERVICES
 --==================================================
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local player = game:GetService("Players").LocalPlayer
 
 local function getChar()
     return player.Character or player.CharacterAdded:Wait()
@@ -134,7 +133,6 @@ local function fallbackMove(h, hrp, getDestination)
         local dest = getDestination()
         if not dest then break end
 
-        -- marche directe vers la destination
         h:MoveTo(dest)
         h.MoveToFinished:Wait(1.5)
 
@@ -146,13 +144,13 @@ local function fallbackMove(h, hrp, getDestination)
         end
         lastPos = hrp.Position
 
-        -- fallback hard : mini TP
+        -- mini TP si bloqué
         if stuckTimer >= 3 then
-            hrp.CFrame = CFrame.new(dest + Vector3.new(0, 3, 0))
+            hrp.CFrame = CFrame.new(dest + Vector3.new(0,3,0))
             stuckTimer = 0
         end
 
-        -- si proche de la destination, fin
+        -- arrivé proche
         if (hrp.Position - dest).Magnitude < 5 then break end
         task.wait(0.1)
     end
@@ -182,11 +180,18 @@ task.spawn(function()
             end
             if not target then task.wait(0.3) continue end
 
-            local eggPart = target:IsA("Model") and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true)) or target
+            -- détecter Part ou Mesh du Model
+            local eggPart
+            if target:IsA("Model") then
+                eggPart = target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true) or target:FindFirstChildWhichIsA("MeshPart", true)
+            elseif target:IsA("BasePart") or target:IsA("MeshPart") then
+                eggPart = target
+            end
+
             local clickDetector = target:FindFirstChildWhichIsA("ClickDetector", true)
             if not (eggPart and clickDetector) then task.wait(0.3) continue end
 
-            -- fallback move direct + noclip
+            -- déplacement fallback direct + noclip
             fallbackMove(humanoid, hrp, function()
                 return target.Parent and eggPart.Position or nil
             end)
