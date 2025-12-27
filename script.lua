@@ -62,7 +62,7 @@ end)
 local MainTab = Window:CreateTab("Main", 4483362458)
 
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "Auto Index (Whitelist)",
+    Name = "broken auto find egg",
     CurrentValue = false,
     Flag = "AutoIndex",
     Callback = function() end
@@ -191,3 +191,59 @@ task.spawn(function()
         task.wait(0.3)
     end
 end)
+
+--==================================================
+-- RAYFIELD TOGGLE INDEX AREA
+--==================================================
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Mega Index Toggle",
+    Icon = 0,
+    LoadingTitle = "Mega Index Toggle",
+    LoadingSubtitle = "by AndroidOwnedScripter",
+    ShowText = "Rayfield",
+    Theme = "Default",
+    ToggleUIKeybind = "K",
+})
+
+
+
+-- Toggle
+local MegaIndexToggle = MainTab:CreateToggle({
+    Name = "Click to index",
+    CurrentValue = false,
+    Flag = "MegaIndex",
+    Callback = function(state)
+        local indexArea =
+            workspace:WaitForChild("Map")
+            :WaitForChild("Index")
+            :WaitForChild("IndexArea")
+
+        if not indexArea:IsA("BasePart") then
+            warn("IndexArea n'est pas une BasePart")
+            return
+        end
+
+        if state then
+            -- Activer mega index
+            indexArea.Size = Vector3.new(5000, 2000, 5000)
+            indexArea.CFrame = CFrame.new(indexArea.Position)
+            indexArea.Transparency = 0.6
+            indexArea.CanCollide = false
+            indexArea.Anchored = true
+            indexArea.Material = Enum.Material.ForceField
+            indexArea.Color = Color3.fromRGB(0, 255, 255)
+            print("✅ Mega Index activé")
+        else
+            -- Rétablir taille normale
+            indexArea.Size = Vector3.new(20, 20, 20) -- adapte selon la taille originale
+            indexArea.Transparency = 1
+            indexArea.CanCollide = true
+            indexArea.Anchored = true
+            indexArea.Material = Enum.Material.SmoothPlastic
+            indexArea.Color = Color3.fromRGB(255, 255, 255)
+            print("❌ Mega Index désactivé")
+        end
+    end
+})
