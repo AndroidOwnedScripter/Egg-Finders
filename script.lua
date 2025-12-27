@@ -193,7 +193,7 @@ task.spawn(function()
 end)
 
 
-
+-- Mega index
 local MegaIndexToggle = MainTab:CreateToggle({
     Name = "Mega Index Area",
     CurrentValue = false,
@@ -213,17 +213,17 @@ local MegaIndexToggle = MainTab:CreateToggle({
             -- Activer mega index
             indexArea.Size = Vector3.new(5000, 2000, 5000)
             indexArea.CFrame = CFrame.new(indexArea.Position)
-            indexArea.Transparency = 0.6
+            indexArea.Transparency = 1
             indexArea.CanCollide = false
             indexArea.Anchored = true
             indexArea.Material = Enum.Material.ForceField
-            indexArea.Color = Color3.fromRGB(0, 255, 255)
+            indexArea.Color = Color3.fromRGB(0, 0, 0)
             print("✅ Mega Index activé")
         else
             -- Rétablir taille normale
             indexArea.Size = Vector3.new(20, 20, 20) -- adapte selon la taille originale
             indexArea.Transparency = 1
-            indexArea.CanCollide = true
+            indexArea.CanCollide = false
             indexArea.Anchored = true
             indexArea.Material = Enum.Material.SmoothPlastic
             indexArea.Color = Color3.fromRGB(255, 255, 255)
