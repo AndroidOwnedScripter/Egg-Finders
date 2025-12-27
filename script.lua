@@ -263,3 +263,42 @@ local MegaIndexToggle = MainTab:CreateToggle({
         end
     end
 })
+
+
+
+--==================================================
+-- AURA CLICK TOGGLE
+--==================================================
+local AuraClickToggle = MainTab:CreateToggle({
+    Name = "AuraClick",
+    CurrentValue = false,
+    Flag = "AuraClick",
+    Callback = function(v)
+        _G.AuraClick = v
+    end
+})
+
+_G.AuraClick = false
+
+task.spawn(function()
+    while true do
+        if _G.AuraClick then
+            local char = getCharacter()
+            local hrp = char:WaitForChild("HumanoidRootPart")
+            local radius = 10 -- rayon de l'aura (à ajuster)
+
+            -- Chercher tous les ClickDetectors dans la zone
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("ClickDetector") and obj.Parent then
+                    local part = obj.Parent:IsA("BasePart") and obj.Parent or obj.Parent:FindFirstChildWhichIsA("BasePart", true)
+                    if part and (part.Position - hrp.Position).Magnitude <= radius then
+                        pcall(function()
+                            fireclickdetector(obj)
+                        end)
+                    end
+                end
+            end
+        end
+        task.wait(0.05) -- vitesse de spam
+    end
+end)
