@@ -58,6 +58,11 @@ end)
 
 
 --==================================================
+-- MAIN TAB — AUTO FIND EGG + AUTO SELL (PATHFINDING DYNAMIQUE)
+--==================================================
+local MainTab = Window:CreateTab("Main", 4483362458)
+
+--==================================================
 -- AUTO FIND EGG + SELL (CLICK-TO-MOVE + SPAM MACHINE)
 --==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
@@ -212,7 +217,6 @@ task.spawn(function()
 end)
 
 
-
 -- Mega index
 local MegaIndexToggle = MainTab:CreateToggle({
     Name = "Mega Index Area",
@@ -291,4 +295,3 @@ task.spawn(function()
         task.wait(0.1) -- vitesse de spam
     end
 end)
-
