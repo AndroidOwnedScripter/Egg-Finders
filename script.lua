@@ -308,7 +308,7 @@ local EggPullToggle = MainTab:CreateToggle({
 })
 
 _G.EggPull = false
-local PULL_SPEED = 10 -- studs par frame (à ajuster)
+local PULL_SPEED = 2 -- studs par frame (à ajuster)
 
 task.spawn(function()
     while true do
