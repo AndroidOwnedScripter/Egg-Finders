@@ -56,9 +56,8 @@ task.spawn(function()
     end
 end)
 
-
 --==================================================
--- MAIN TAB — AUTO FIND EGG + AUTO SELL (PATHFINDING DYNAMIQUE)
+-- MAIN TAB
 --==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
 
@@ -216,8 +215,9 @@ task.spawn(function()
     end
 end)
 
-
+--==================================================
 -- Mega index
+--==================================================
 local MegaIndexToggle = MainTab:CreateToggle({
     Name = "Mega Index Area",
     CurrentValue = false,
@@ -255,8 +255,6 @@ local MegaIndexToggle = MainTab:CreateToggle({
         end
     end
 })
-
-
 
 --==================================================
 -- AURA CLICK TOGGLE
