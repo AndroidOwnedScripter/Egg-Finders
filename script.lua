@@ -314,7 +314,7 @@ local PULL_SPEED = 5 -- studs par frame (à ajuster)
 task.spawn(function()
     while true do
         if _G.EggPull then
-            local char = getChar()
+            local char = getCharacter()
             local hrp = char:WaitForChild("HumanoidRootPart")
             local eggsFolder = workspace:FindFirstChild("Eggs")
             if eggsFolder then
@@ -328,7 +328,7 @@ task.spawn(function()
 
                     if eggPart and egg.Parent then
                         local dist = (hrp.Position - eggPart.Position).Magnitude
-                        if dist > 2 then -- éviter de tirer si déjà proche
+                        if dist > 2 then
                             local dir = (hrp.Position - eggPart.Position).Unit
                             eggPart.CFrame = eggPart.CFrame + dir * math.min(PULL_SPEED, dist)
                         end
@@ -336,6 +336,7 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(0.05) -- vitesse du pull
+        task.wait(0.05)
     end
 end)
+
