@@ -5,6 +5,7 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
     Name = "Egg Finders",
+    Icon = 4483362458,
     LoadingTitle = "Egg Finders",
     LoadingSubtitle = "AndroidOwnedScripter",
     ToggleUIKeybind = "K",
@@ -22,9 +23,9 @@ local function getCharacter()
 end
 
 --==================================================
--- EVENT TAB — AUTO ORB (INCHANGÉ)
+-- EVENT TAB — AUTO ORB
 --==================================================
-local EventTab = Window:CreateTab("Event")
+local EventTab = Window:CreateTab("Event", 4483362458)
 
 local AutoOrbToggle = EventTab:CreateToggle({
     Name = "Auto Orb [❄️]",
@@ -42,7 +43,7 @@ task.spawn(function()
             if orbs then
                 for _, orb in ipairs(orbs:GetChildren()) do
                     if orb:IsA("BasePart") and orb.Name == "ItemOrb" then
-                        hrp.CFrame = orb.CFrame + Vector3.new(0, 3, 0)
+                        hrp.CFrame = orb.CFrame + Vector3.new(0,3,0)
                         break
                     end
                 end
@@ -55,7 +56,7 @@ end)
 --==================================================
 -- MAIN TAB
 --==================================================
-local MainTab = Window:CreateTab("Main")
+local MainTab = Window:CreateTab("Main", 4483362458)
 
 local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto Index",
@@ -65,6 +66,9 @@ local AutoIndexToggle = MainTab:CreateToggle({
         _G.AutoSellEggs = v
     end
 })
+
+
+-- MEGA INDEX
 
 local MegaIndexToggle = MainTab:CreateToggle({
     Name = "Mega Index",
@@ -98,7 +102,7 @@ local EggPriority = {
 }
 
 local AllowedEggs = {}
-for i, name in ipairs(EggPriority) do
+for i,name in ipairs(EggPriority) do
     AllowedEggs[name] = i
 end
 
@@ -122,47 +126,49 @@ task.spawn(function()
 end)
 
 --==================================================
--- PATHFINDING (FINAL STABLE)
+-- PATHFINDING STABLE
 --==================================================
 local function moveToDestination(humanoid, hrp, getTargetPos, abortCheck)
-    local targetPos = getTargetPos()
-    if not targetPos then return false end
+    local lastRepath = 0
+    while AutoIndexToggle.CurrentValue or _G.MegaIndex do
+        if abortCheck and abortCheck() then return false end
+        local targetPos = getTargetPos()
+        if not targetPos then return false end
 
-    local path = PathfindingService:CreatePath({
-        AgentRadius = 3,
-        AgentHeight = 6,
-        AgentCanJump = true,
-        AgentJumpHeight = 10,
-        AgentMaxSlope = 50
-    })
+        if tick() - lastRepath < 0.25 then
+            task.wait(0.05)
+            continue
+        end
+        lastRepath = tick()
 
-    path:ComputeAsync(hrp.Position, targetPos)
-    if path.Status ~= Enum.PathStatus.Success then
-        return false
+        local path = PathfindingService:CreatePath({
+            AgentRadius = 3,
+            AgentHeight = 6,
+            AgentCanJump = true,
+            AgentJumpHeight = 10,
+            AgentMaxSlope = 50
+        })
+        path:ComputeAsync(hrp.Position, targetPos)
+        if path.Status ~= Enum.PathStatus.Success then
+            task.wait(0.1)
+            continue
+        end
+
+        for _, wp in ipairs(path:GetWaypoints()) do
+            if abortCheck and abortCheck() then return false end
+            humanoid:MoveTo(wp.Position)
+            if wp.Action == Enum.PathWaypointAction.Jump then humanoid.Jump = true end
+            local timeout = tick() + 1.5
+            while (hrp.Position - wp.Position).Magnitude > 2 do
+                if abortCheck and abortCheck() then return false end
+                if tick() > timeout then break end
+                task.wait(0.05)
+            end
+        end
+
+        if (hrp.Position - targetPos).Magnitude <= 4 then return true end
     end
-
-    for _, wp in ipairs(path:GetWaypoints()) do
-        if not (AutoIndexToggle.CurrentValue or _G.MegaIndex) then
-            return false
-        end
-
-        if abortCheck and abortCheck() then
-            return false
-        end
-
-        humanoid:MoveTo(wp.Position)
-
-        if wp.Action == Enum.PathWaypointAction.Jump then
-            humanoid.Jump = true
-        end
-
-        local reached = humanoid.MoveToFinished:Wait(1.5)
-        if not reached then
-            return false -- bloqué → recalcul
-        end
-    end
-
-    return true
+    return false
 end
 
 --==================================================
@@ -175,7 +181,6 @@ task.spawn(function()
             local hrp = char:WaitForChild("HumanoidRootPart")
             local humanoid = char:WaitForChild("Humanoid")
             local eggsFolder = workspace:FindFirstChild("Eggs")
-
             if eggsFolder then
                 local bestEgg, bestPrio = nil, math.huge
                 for _, egg in ipairs(eggsFolder:GetChildren()) do
@@ -186,29 +191,15 @@ task.spawn(function()
                 end
 
                 if bestEgg then
-                    local part = bestEgg:IsA("Model")
-                        and (bestEgg.PrimaryPart or bestEgg:FindFirstChildWhichIsA("BasePart", true))
-                        or bestEgg
+                    local part = bestEgg:IsA("Model") and (bestEgg.PrimaryPart or bestEgg:FindFirstChildWhichIsA("BasePart", true)) or bestEgg
                     local click = bestEgg:FindFirstChildWhichIsA("ClickDetector", true)
 
                     if part and click then
-                        local reached = moveToDestination(
-                            humanoid,
-                            hrp,
-                            function() return part.Position end,
-                            function() return not bestEgg.Parent end
-                        )
-
+                        local reached = moveToDestination(humanoid, hrp, function() return part.Position end, function() return not bestEgg.Parent end)
                         if reached and bestEgg.Parent then
                             fireclickdetector(click)
                             task.wait(0.25)
-
-                            moveToDestination(
-                                humanoid,
-                                hrp,
-                                function() return prompt.Parent.Position end,
-                                function() return false end
-                            )
+                            moveToDestination(humanoid, hrp, function() return prompt.Parent.Position end, function() return not bestEgg.Parent end)
                         end
                     end
                 end
