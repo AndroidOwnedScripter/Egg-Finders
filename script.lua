@@ -293,3 +293,49 @@ task.spawn(function()
         task.wait(0.1) -- vitesse de spam
     end
 end)
+
+
+--==================================================
+-- EGG PULL TOGGLE
+--==================================================
+local EggPullToggle = MainTab:CreateToggle({
+    Name = "Egg Pull",
+    CurrentValue = false,
+    Flag = "EggPull",
+    Callback = function(state)
+        _G.EggPull = state
+    end
+})
+
+_G.EggPull = false
+
+local PULL_SPEED = 5 -- studs par frame (à ajuster)
+
+task.spawn(function()
+    while true do
+        if _G.EggPull then
+            local char = getChar()
+            local hrp = char:WaitForChild("HumanoidRootPart")
+            local eggsFolder = workspace:FindFirstChild("Eggs")
+            if eggsFolder then
+                for _, egg in ipairs(eggsFolder:GetChildren()) do
+                    local eggPart
+                    if egg:IsA("Model") then
+                        eggPart = egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart", true)
+                    elseif egg:IsA("BasePart") or egg:IsA("MeshPart") then
+                        eggPart = egg
+                    end
+
+                    if eggPart and egg.Parent then
+                        local dist = (hrp.Position - eggPart.Position).Magnitude
+                        if dist > 2 then -- éviter de tirer si déjà proche
+                            local dir = (hrp.Position - eggPart.Position).Unit
+                            eggPart.CFrame = eggPart.CFrame + dir * math.min(PULL_SPEED, dist)
+                        end
+                    end
+                end
+            end
+        end
+        task.wait(0.05) -- vitesse du pull
+    end
+end)
