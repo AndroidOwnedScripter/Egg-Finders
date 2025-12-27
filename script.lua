@@ -88,7 +88,7 @@ local EggPriority = {
     "Veri Epik Eg","StarFall","DogEgg","Super Ghost","Paradox","Holy","Squid","Golden",
     "RoEgg","Blueberregg","Crabegg","CartRide","Appegg","Ice","Eggday","Sun","Orangegg",
     "Electricitegg","Banana","Corrupted","Iglegg","Cheese","Magma","Wild","Core","Seedlegg",
-    "Paintegg","Eg","Pull","Bee","Frogg","Angry","Weleded"
+    "Paintegg","Eg","Pull","Bee","Frogg","Angry"
 }
 
 -- Pour lookup rapide (priorité)
