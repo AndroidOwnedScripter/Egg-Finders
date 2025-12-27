@@ -62,19 +62,20 @@ end)
 --==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
 
+--==================================================
+-- AUTO FIND EGG + SELL (REWORK)
+--==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "auto find egg + sell",
+    Name = "Auto find egg + sell",
     CurrentValue = false,
     Flag = "AutoIndex",
-    Callback = function(value)
-        _G.AutoSellEggs = value
+    Callback = function(v)
+        _G.AutoSellEggs = v
     end
 })
 
---==================================================
--- 🥚 PRIORITY LIST DES ŒUFS
---==================================================
-local EggPriority = { -- ta liste complète
+-- liste des œufs reste inchangée
+local EggPriority = {
     "Malware","Quantum","ERR0R","Shiny Quantum","Shiny Golden","Shiny Blueberregg",
     "Shiny Rategg","Shiny Wategg","Shiny Fire","Shiny Ghost","Shiny Iron","Shiny Fish",
     "Shiny Glass","Shiny Corroded","Shiny Grass","Shiny Egg","Angel","Golden Santegg",
@@ -87,12 +88,14 @@ local EggPriority = { -- ta liste complète
     "Reverie","Seraphim","Winning Egg","Admegg","Capybaregg","JackoLantegg","Doodle’s",
     "Veri Epik Eg","StarFall","DogEgg","Super Ghost","Paradox","Holy","Squid","Golden",
     "RoEgg","Blueberregg","Crabegg","CartRide","Appegg","Ice","Eggday","Sun","Orangegg",
-    "Electricitegg","Banana","Corrupted","Iglegg","Cheese","Magma","Wild","Core","Seedlegg",
-    "Paintegg","Eg","Pull","Bee","Frogg","Angry","Grass"
+    "Electricitegg","Banana","Corrupted","Iglegg","Cheese","Magma","Wild","Core",
+    "Seedlegg","Paintegg","Eg","Pull","Bee","Frogg","Angry","Grass"
 }
 
 local AllowedEggs = {}
-for i, name in ipairs(EggPriority) do AllowedEggs[name] = i end
+for i,v in ipairs(EggPriority) do
+    AllowedEggs[v] = i
+end
 
 --==================================================
 -- SERVICES
@@ -101,129 +104,126 @@ local Players = game:GetService("Players")
 local PathfindingService = game:GetService("PathfindingService")
 local player = Players.LocalPlayer
 
-local function getCharacter()
+local function getChar()
     return player.Character or player.CharacterAdded:Wait()
 end
 
 --==================================================
--- PATHFINDING DYNAMIQUE
+-- Noclip
 --==================================================
-local function goTo(humanoid, hrp, getDestination)
-    while AutoIndexToggle.CurrentValue do
-        local dest = getDestination()
-        if not dest then break end
-
-        local path = PathfindingService:CreatePath({
-            AgentRadius = 2,
-            AgentHeight = 5,
-            AgentCanJump = true,
-            AgentJumpHeight = 7,
-            AgentMaxSlope = 45
-        })
-
-        path:ComputeAsync(hrp.Position, dest)
-        if path.Status ~= Enum.PathStatus.Success then
-            task.wait(0.3)
-        else
-            local blocked = false
-            for _, wp in ipairs(path:GetWaypoints()) do
-                humanoid:MoveTo(wp.Position)
-                if wp.Action == Enum.PathWaypointAction.Jump then humanoid.Jump = true end
-
-                local startTime = tick()
-                while (hrp.Position - wp.Position).Magnitude > 2 do
-                    if not AutoIndexToggle.CurrentValue then return end
-
-                    -- Recalculer la destination si elle a bougé
-                    local newDest = getDestination()
-                    if (newDest - wp.Position).Magnitude > 2 then
-                        blocked = true
-                        break
-                    end
-
-                    -- Timeout pour éviter blocage sur obstacle
-                    if tick() - startTime > 2 then
-                        blocked = true
-                        break
-                    end
-
-                    task.wait(0.05)
-                end
-
-                if blocked then break end
-            end
+local function noclip(enable)
+    local char = getChar()
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not enable
         end
-        task.wait(0.05)
     end
 end
 
 --==================================================
--- AUTO SELL CONFIG
+-- SMART MOVE + FALLBACK + NOCLIP
 --==================================================
-local SELL_DELAY = 0.1
-local prompt = workspace.Map.Crusher.Hitbox:WaitForChild("ProximityPrompt")
-prompt.MaxActivationDistance = math.huge
-prompt.HoldDuration = 0
+local function smartGoTo(h, hrp, getDestination)
+    noclip(true) -- activer noclip
+    h.PlatformStand = false
+    h.AutoRotate = true
 
-if not fireproximityprompt then warn("fireproximityprompt non supporté") end
-_G.AutoSellEggs = false
-task.spawn(function()
-    while true do
-        if _G.AutoSellEggs then pcall(function() fireproximityprompt(prompt) end) end
-        task.wait(SELL_DELAY)
+    local stuckTimer = 0
+    local lastPos = hrp.Position
+
+    while AutoIndexToggle.CurrentValue do
+        local dest = getDestination()
+        if not dest then break end
+
+        -- pathfinding
+        local path = PathfindingService:CreatePath({AgentCanJump = true, AgentRadius = 2, AgentHeight = 5, AgentJumpHeight = 7})
+        path:ComputeAsync(hrp.Position, dest)
+
+        if path.Status == Enum.PathStatus.Success then
+            for _, wp in ipairs(path:GetWaypoints()) do
+                if not AutoIndexToggle.CurrentValue then break end
+                h:MoveTo(wp.Position)
+                if wp.Action == Enum.PathWaypointAction.Jump then
+                    h.Jump = true
+                end
+                h.MoveToFinished:Wait(1.5)
+            end
+        else
+            -- fallback marche directe
+            h:MoveTo(dest)
+            h.MoveToFinished:Wait(1.5)
+        end
+
+        -- détection blocage
+        if (hrp.Position - lastPos).Magnitude < 1 then
+            stuckTimer += 1
+        else
+            stuckTimer = 0
+        end
+        lastPos = hrp.Position
+
+        -- fallback hard : mini tp
+        if stuckTimer >= 3 then
+            hrp.CFrame = CFrame.new(dest + Vector3.new(0,3,0))
+            stuckTimer = 0
+        end
+
+        -- arrivé proche
+        if (hrp.Position - dest).Magnitude < 5 then break end
+        task.wait(0.1)
     end
-end)
+    noclip(false) -- désactiver noclip après déplacement
+end
 
 --==================================================
--- AUTO FIND EGG + SELL
+-- AUTO FIND EGG + SELL LOOP
 --==================================================
 task.spawn(function()
     while true do
         if AutoIndexToggle.CurrentValue then
-            local char = getCharacter()
-            local hrp = char:WaitForChild("HumanoidRootPart")
+            local char = getChar()
             local humanoid = char:WaitForChild("Humanoid")
+            local hrp = char:WaitForChild("HumanoidRootPart")
+
             local eggsFolder = workspace:FindFirstChild("Eggs")
             if not eggsFolder then task.wait(0.3) continue end
 
-            local function getHighestPriorityEgg()
-                local target, bestPrio = nil, math.huge
-                for _, egg in ipairs(eggsFolder:GetChildren()) do
-                    if AllowedEggs[egg.Name] then
-                        local prio = AllowedEggs[egg.Name]
-                        if prio < bestPrio then
-                            target, bestPrio = egg, prio
-                        end
-                    end
+            -- choisir meilleur œuf
+            local target, bestPrio = nil, math.huge
+            for _, egg in ipairs(eggsFolder:GetChildren()) do
+                local p = AllowedEggs[egg.Name]
+                if p and p < bestPrio then
+                    target, bestPrio = egg, p
                 end
-                return target, bestPrio
             end
+            if not target then task.wait(0.3) continue end
 
-            local targetEgg, highestPriority = getHighestPriorityEgg()
-            if not targetEgg then task.wait(0.3) continue end
-
-            local eggPart = targetEgg:IsA("Model") and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true)) or targetEgg
-            local clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
+            local eggPart = target:IsA("Model") and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true)) or target
+            local clickDetector = target:FindFirstChildWhichIsA("ClickDetector", true)
             if not (eggPart and clickDetector) then task.wait(0.3) continue end
 
-            -- Suivi vers l’œuf
-            goTo(humanoid, hrp, function()
-                if not targetEgg.Parent then return nil end
-                return eggPart.Position
+            -- marche vers l’œuf avec fallback + noclip
+            smartGoTo(humanoid, hrp, function()
+                return target.Parent and eggPart.Position or nil
             end)
 
-            if targetEgg.Parent then
+            -- clic sur l’œuf
+            if target.Parent then
                 fireclickdetector(clickDetector)
                 task.wait(0.2)
 
-                -- Aller vers la machine
-                goTo(humanoid, hrp, function() return prompt.Parent.Position end)
+                -- aller vers la machine pour vendre
+                local prompt = workspace.Map.Crusher.Hitbox:WaitForChild("ProximityPrompt")
+                smartGoTo(humanoid, hrp, function()
+                    return prompt.Parent.Position
+                end)
             end
         else
             task.wait(0.1)
         end
     end
 end)
+
 
 -- Mega index
 local MegaIndexToggle = MainTab:CreateToggle({
