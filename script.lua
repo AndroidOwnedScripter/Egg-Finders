@@ -173,7 +173,7 @@ local function smartGoTo(h, hrp, getDestination)
 
         task.wait(0.1)
     end
-
+end
 -- Mega index
 local MegaIndexToggle = MainTab:CreateToggle({
     Name = "Mega Index Area",
