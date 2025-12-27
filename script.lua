@@ -62,8 +62,11 @@ end)
 --==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
 
+--==================================================
+-- 🎛️ RAYFIELD TOGGLE
+--==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "auto find egg + sell",
+    Name = "Auto find egg + sell",
     CurrentValue = false,
     Flag = "AutoIndex",
     Callback = function(value)
@@ -74,7 +77,7 @@ local AutoIndexToggle = MainTab:CreateToggle({
 --==================================================
 -- 🥚 PRIORITY LIST DES ŒUFS
 --==================================================
-local EggPriority = { -- ta liste complète
+local EggPriority = {
     "Malware","Quantum","ERR0R","Shiny Quantum","Shiny Golden","Shiny Blueberregg",
     "Shiny Rategg","Shiny Wategg","Shiny Fire","Shiny Ghost","Shiny Iron","Shiny Fish",
     "Shiny Glass","Shiny Corroded","Shiny Grass","Shiny Egg","Angel","Golden Santegg",
@@ -87,12 +90,14 @@ local EggPriority = { -- ta liste complète
     "Reverie","Seraphim","Winning Egg","Admegg","Capybaregg","JackoLantegg","Doodle’s",
     "Veri Epik Eg","StarFall","DogEgg","Super Ghost","Paradox","Holy","Squid","Golden",
     "RoEgg","Blueberregg","Crabegg","CartRide","Appegg","Ice","Eggday","Sun","Orangegg",
-    "Electricitegg","Banana","Corrupted","Iglegg","Cheese","Magma","Wild","Core","Seedlegg",
-    "Paintegg","Eg","Pull","Bee","Frogg","Angry","Grass"
+    "Electricitegg","Banana","Corrupted","Iglegg","Cheese","Magma","Wild","Core",
+    "Seedlegg","Paintegg","Eg","Pull","Bee","Frogg","Angry","Grass"
 }
 
 local AllowedEggs = {}
-for i, name in ipairs(EggPriority) do AllowedEggs[name] = i end
+for i, name in ipairs(EggPriority) do
+    AllowedEggs[name] = i
+end
 
 --==================================================
 -- SERVICES
@@ -106,12 +111,19 @@ local function getCharacter()
 end
 
 --==================================================
--- PATHFINDING DYNAMIQUE
+-- 🧠 SMART PATHFINDING (ANTI BLOQUAGE / TP SAFE)
 --==================================================
-local function goTo(humanoid, hrp, getDestination)
+local function smartGoTo(humanoid, hrp, getDestination)
+    local lastPos = hrp.Position
+
     while AutoIndexToggle.CurrentValue do
         local dest = getDestination()
-        if not dest then break end
+        if not dest then return end
+
+        if (hrp.Position - lastPos).Magnitude > 20 then
+            task.wait(0.1)
+        end
+        lastPos = hrp.Position
 
         local path = PathfindingService:CreatePath({
             AgentRadius = 2,
@@ -123,34 +135,32 @@ local function goTo(humanoid, hrp, getDestination)
 
         path:ComputeAsync(hrp.Position, dest)
         if path.Status ~= Enum.PathStatus.Success then
-            task.wait(0.3)
-        else
-            local blocked = false
-            for _, wp in ipairs(path:GetWaypoints()) do
-                humanoid:MoveTo(wp.Position)
-                if wp.Action == Enum.PathWaypointAction.Jump then humanoid.Jump = true end
+            task.wait(0.2)
+            continue
+        end
 
-                local startTime = tick()
-                while (hrp.Position - wp.Position).Magnitude > 2 do
-                    if not AutoIndexToggle.CurrentValue then return end
+        for _, wp in ipairs(path:GetWaypoints()) do
+            if not AutoIndexToggle.CurrentValue then return end
 
-                    -- Recalculer la destination si elle a bougé
-                    local newDest = getDestination()
-                    if (newDest - wp.Position).Magnitude > 2 then
-                        blocked = true
-                        break
-                    end
+            humanoid:MoveTo(wp.Position)
+            if wp.Action == Enum.PathWaypointAction.Jump then
+                humanoid.Jump = true
+            end
 
-                    -- Timeout pour éviter blocage sur obstacle
-                    if tick() - startTime > 2 then
-                        blocked = true
-                        break
-                    end
+            local start = tick()
+            while (hrp.Position - wp.Position).Magnitude > 2 do
+                if not AutoIndexToggle.CurrentValue then return end
 
-                    task.wait(0.05)
+                local newDest = getDestination()
+                if not newDest or (newDest - dest).Magnitude > 4 then
+                    break
                 end
 
-                if blocked then break end
+                if tick() - start > 1.5 then
+                    break
+                end
+
+                task.wait(0.05)
             end
         end
         task.wait(0.05)
@@ -158,56 +168,77 @@ local function goTo(humanoid, hrp, getDestination)
 end
 
 --==================================================
--- AUTO SELL CONFIG
+-- 💰 AUTO SELL
 --==================================================
 local SELL_DELAY = 0.1
 local prompt = workspace.Map.Crusher.Hitbox:WaitForChild("ProximityPrompt")
 prompt.MaxActivationDistance = math.huge
 prompt.HoldDuration = 0
 
-if not fireproximityprompt then warn("fireproximityprompt non supporté") end
+if not fireproximityprompt then
+    warn("fireproximityprompt non supporté")
+end
+
 _G.AutoSellEggs = false
+
 task.spawn(function()
     while true do
-        if _G.AutoSellEggs then pcall(function() fireproximityprompt(prompt) end) end
+        if _G.AutoSellEggs then
+            pcall(function()
+                fireproximityprompt(prompt)
+            end)
+        end
         task.wait(SELL_DELAY)
     end
 end)
 
 --==================================================
--- AUTO FIND EGG + SELL
+-- 🤖 AUTO FIND EGG + SELL
 --==================================================
 task.spawn(function()
     while true do
         if AutoIndexToggle.CurrentValue then
             local char = getCharacter()
-            local hrp = char:WaitForChild("HumanoidRootPart")
             local humanoid = char:WaitForChild("Humanoid")
-            local eggsFolder = workspace:FindFirstChild("Eggs")
-            if not eggsFolder then task.wait(0.3) continue end
+            local hrp = char:WaitForChild("HumanoidRootPart")
 
-            local function getHighestPriorityEgg()
-                local target, bestPrio = nil, math.huge
-                for _, egg in ipairs(eggsFolder:GetChildren()) do
-                    if AllowedEggs[egg.Name] then
-                        local prio = AllowedEggs[egg.Name]
-                        if prio < bestPrio then
-                            target, bestPrio = egg, prio
-                        end
-                    end
-                end
-                return target, bestPrio
+            local eggsFolder = workspace:FindFirstChild("Eggs")
+            if not eggsFolder then
+                task.wait(0.3)
+                continue
             end
 
-            local targetEgg, highestPriority = getHighestPriorityEgg()
-            if not targetEgg then task.wait(0.3) continue end
+            -- 🥇 meilleur œuf selon priorité
+            local function getBestEgg()
+                local best, prio = nil, math.huge
+                for _, egg in ipairs(eggsFolder:GetChildren()) do
+                    local p = AllowedEggs[egg.Name]
+                    if p and p < prio then
+                        best, prio = egg, p
+                    end
+                end
+                return best
+            end
 
-            local eggPart = targetEgg:IsA("Model") and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true)) or targetEgg
+            local targetEgg = getBestEgg()
+            if not targetEgg then
+                task.wait(0.3)
+                continue
+            end
+
+            local eggPart =
+                targetEgg:IsA("Model") and
+                (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
+                or targetEgg
+
             local clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
-            if not (eggPart and clickDetector) then task.wait(0.3) continue end
+            if not (eggPart and clickDetector) then
+                task.wait(0.3)
+                continue
+            end
 
-            -- Suivi vers l’œuf
-            goTo(humanoid, hrp, function()
+            -- 🚶 vers l’œuf
+            smartGoTo(humanoid, hrp, function()
                 if not targetEgg.Parent then return nil end
                 return eggPart.Position
             end)
@@ -216,8 +247,10 @@ task.spawn(function()
                 fireclickdetector(clickDetector)
                 task.wait(0.2)
 
-                -- Aller vers la machine
-                goTo(humanoid, hrp, function() return prompt.Parent.Position end)
+                -- 🚚 vers la machine
+                smartGoTo(humanoid, hrp, function()
+                    return prompt.Parent.Position
+                end)
             end
         else
             task.wait(0.1)
@@ -303,64 +336,3 @@ task.spawn(function()
     end
 end)
 
-
---==================================================
--- AUTOSELL
---==================================================
-
-local AutoSellCrusherToggle = MainTab:CreateToggle({
-    Name = "AutoSell",
-    CurrentValue = false,
-    Flag = "AutoSellCrusher",
-    Callback = function(value)
-        _G.AutoSellCrusher = value
-    end
-})
-
-_G.AutoSellCrusher = false
-
--- CONFIGURATION DU CRUSHER
-local crusher = workspace:WaitForChild("Map"):WaitForChild("Crusher")
-local hitbox = crusher:WaitForChild("Hitbox")
-local prompt = hitbox:WaitForChild("ProximityPrompt")
-
-for _, obj in ipairs(crusher:GetDescendants()) do
-    if obj:IsA("BasePart") then
-        obj.Transparency = 1
-        obj.CanCollide = false
-        obj.Anchored = true
-    end
-end
-
--- PROMPT INVISIBLE
-prompt.MaxActivationDistance = math.huge
-prompt.HoldDuration = 0
-prompt.ActionText = ""
-prompt.ObjectText = ""
-prompt.Visible = false
-
--- POSITION DEVANT LE JOUEUR
-game:GetService("RunService").RenderStepped:Connect(function()
-    if _G.AutoSellCrusher then
-        local char = player.Character
-        if char then
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if hrp and crusher.PrimaryPart then
-                local frontPos = hrp.CFrame.Position + (hrp.CFrame.LookVector * 2)
-                crusher:SetPrimaryPartCFrame(CFrame.new(frontPos))
-            end
-        end
-    end
-end)
-
--- SPAM DU PROXIMITY PROMPT
-task.spawn(function()
-    while true do
-        if _G.AutoSellCrusher then
-            pcall(function()
-                fireproximityprompt(prompt)
-            end)
-        end
-        task.wait(0.05)
-    end
-end)
