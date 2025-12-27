@@ -63,7 +63,7 @@ end)
 local MainTab = Window:CreateTab("Main", 4483362458)
 
 --==================================================
--- AUTO FIND EGG + SELL (REWORK)
+-- AUTO FIND EGG + SELL (FALLBACK DIRECT + NOCLIP)
 --==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto find egg + sell",
@@ -101,7 +101,6 @@ end
 -- SERVICES
 --==================================================
 local Players = game:GetService("Players")
-local PathfindingService = game:GetService("PathfindingService")
 local player = Players.LocalPlayer
 
 local function getChar()
@@ -109,7 +108,7 @@ local function getChar()
 end
 
 --==================================================
--- Noclip
+-- NOCLIP
 --==================================================
 local function noclip(enable)
     local char = getChar()
@@ -121,10 +120,10 @@ local function noclip(enable)
 end
 
 --==================================================
--- SMART MOVE + FALLBACK + NOCLIP
+-- MOVE DIRECT + FALLBACK + NOCLIP
 --==================================================
-local function smartGoTo(h, hrp, getDestination)
-    noclip(true) -- activer noclip
+local function fallbackMove(h, hrp, getDestination)
+    noclip(true)
     h.PlatformStand = false
     h.AutoRotate = true
 
@@ -135,24 +134,9 @@ local function smartGoTo(h, hrp, getDestination)
         local dest = getDestination()
         if not dest then break end
 
-        -- pathfinding
-        local path = PathfindingService:CreatePath({AgentCanJump = true, AgentRadius = 2, AgentHeight = 5, AgentJumpHeight = 7})
-        path:ComputeAsync(hrp.Position, dest)
-
-        if path.Status == Enum.PathStatus.Success then
-            for _, wp in ipairs(path:GetWaypoints()) do
-                if not AutoIndexToggle.CurrentValue then break end
-                h:MoveTo(wp.Position)
-                if wp.Action == Enum.PathWaypointAction.Jump then
-                    h.Jump = true
-                end
-                h.MoveToFinished:Wait(1.5)
-            end
-        else
-            -- fallback marche directe
-            h:MoveTo(dest)
-            h.MoveToFinished:Wait(1.5)
-        end
+        -- marche directe vers la destination
+        h:MoveTo(dest)
+        h.MoveToFinished:Wait(1.5)
 
         -- détection blocage
         if (hrp.Position - lastPos).Magnitude < 1 then
@@ -162,17 +146,17 @@ local function smartGoTo(h, hrp, getDestination)
         end
         lastPos = hrp.Position
 
-        -- fallback hard : mini tp
+        -- fallback hard : mini TP
         if stuckTimer >= 3 then
-            hrp.CFrame = CFrame.new(dest + Vector3.new(0,3,0))
+            hrp.CFrame = CFrame.new(dest + Vector3.new(0, 3, 0))
             stuckTimer = 0
         end
 
-        -- arrivé proche
+        -- si proche de la destination, fin
         if (hrp.Position - dest).Magnitude < 5 then break end
         task.wait(0.1)
     end
-    noclip(false) -- désactiver noclip après déplacement
+    noclip(false)
 end
 
 --==================================================
@@ -202,8 +186,8 @@ task.spawn(function()
             local clickDetector = target:FindFirstChildWhichIsA("ClickDetector", true)
             if not (eggPart and clickDetector) then task.wait(0.3) continue end
 
-            -- marche vers l’œuf avec fallback + noclip
-            smartGoTo(humanoid, hrp, function()
+            -- fallback move direct + noclip
+            fallbackMove(humanoid, hrp, function()
                 return target.Parent and eggPart.Position or nil
             end)
 
@@ -214,7 +198,7 @@ task.spawn(function()
 
                 -- aller vers la machine pour vendre
                 local prompt = workspace.Map.Crusher.Hitbox:WaitForChild("ProximityPrompt")
-                smartGoTo(humanoid, hrp, function()
+                fallbackMove(humanoid, hrp, function()
                     return prompt.Parent.Position
                 end)
             end
