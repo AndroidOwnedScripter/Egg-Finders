@@ -192,26 +192,10 @@ task.spawn(function()
     end
 end)
 
---==================================================
--- RAYFIELD TOGGLE INDEX AREA
---==================================================
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
-
-local Window = Rayfield:CreateWindow({
-    Name = "Mega Index Toggle",
-    Icon = 0,
-    LoadingTitle = "Mega Index Toggle",
-    LoadingSubtitle = "by AndroidOwnedScripter",
-    ShowText = "Rayfield",
-    Theme = "Default",
-    ToggleUIKeybind = "K",
-})
 
 
-
--- Toggle
 local MegaIndexToggle = MainTab:CreateToggle({
-    Name = "Click to index",
+    Name = "Mega Index Area",
     CurrentValue = false,
     Flag = "MegaIndex",
     Callback = function(state)
