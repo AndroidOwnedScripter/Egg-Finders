@@ -231,18 +231,22 @@ task.spawn(function()
                             fireclickdetector(clickDetector)
                             task.wait(0.2)
 
-                            -- Aller vers la machine pour vendre (toujours)
+              -- Aller vers la machine pour vendre
 moveToDestination(humanoid, hrp, function()
     return prompt.Parent.Position
 end)
 
--- Attendre que l'œuf soit vendu
-while AutoIndexToggle.CurrentValue and targetEgg.Parent do
-    task.wait(0.05)
-end
+-- Surveiller la vente SANS bloquer le script
+task.spawn(function()
+    while AutoIndexToggle.CurrentValue do
+        if not targetEgg or not targetEgg.Parent then
+            -- L'œuf a disparu → relancer immédiatement la recherche
+            break
+        end
+        task.wait(0.05)
+    end
+end)
 
--- Petite pause sécurité puis REPARTIR chercher un œuf
-task.wait(0.1)
 
                         end
                     end
