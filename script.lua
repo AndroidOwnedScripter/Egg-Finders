@@ -58,15 +58,17 @@ end)
 
 
 --==================================================
--- MAIN TAB — AUTO FIND EGG (REACTIF)
+-- MAIN TAB — AUTO FIND EGG + AUTO SELL
 --==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
 
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "auto find egg",
+    Name = "auto find egg + sell",
     CurrentValue = false,
     Flag = "AutoIndex",
-    Callback = function() end
+    Callback = function(value)
+        _G.AutoSellEggs = value
+    end
 })
 
 --==================================================
@@ -106,17 +108,42 @@ local function getCharacter()
 end
 
 --==================================================
--- SUIVI RÉACTIF
+-- PATHFINDING + SUIVI RÉACTIF
 --==================================================
-local function followTargetRealtime(humanoid, hrp, getDestination)
+local function followPathRealtime(humanoid, hrp, getDestination)
     local running = true
     task.spawn(function()
         while running and AutoIndexToggle.CurrentValue do
             local dest = getDestination()
-            if dest and (hrp.Position - dest).Magnitude > 2 then
-                humanoid:MoveTo(dest)
+            if dest then
+                -- Créer le chemin
+                local path = PathfindingService:CreatePath({
+                    AgentRadius = 2,
+                    AgentHeight = 5,
+                    AgentCanJump = true,
+                    AgentJumpHeight = 7,
+                    AgentMaxSlope = 45
+                })
+                path:ComputeAsync(hrp.Position, dest)
+
+                if path.Status == Enum.PathStatus.Success then
+                    for _, wp in ipairs(path:GetWaypoints()) do
+                        if not running or not AutoIndexToggle.CurrentValue then break end
+                        humanoid:MoveTo(wp.Position)
+                        if wp.Action == Enum.PathWaypointAction.Jump then humanoid.Jump = true end
+                        -- Suivi réactif
+                        while (hrp.Position - wp.Position).Magnitude > 2 and running and AutoIndexToggle.CurrentValue do
+                            -- Recalculer si la destination a changé
+                            local newDest = getDestination()
+                            if newDest and (newDest - wp.Position).Magnitude > 2 then
+                                break -- Refaire un nouveau path vers la nouvelle position
+                            end
+                            task.wait(0.05)
+                        end
+                    end
+                end
             end
-            task.wait(0.05)
+            task.wait(0.1)
         end
     end)
     return {
@@ -125,7 +152,29 @@ local function followTargetRealtime(humanoid, hrp, getDestination)
 end
 
 --==================================================
--- AUTO INDEX LOOP (PRIORITY + CLICK + REPRISE)
+-- AUTO SELL CONFIG
+--==================================================
+local SELL_DELAY = 0.1
+local prompt = workspace.Map.Crusher.Hitbox:WaitForChild("ProximityPrompt")
+prompt.MaxActivationDistance = math.huge
+prompt.HoldDuration = 0
+
+if not fireproximityprompt then
+    warn("fireproximityprompt non supporté par ton exécuteur")
+end
+
+_G.AutoSellEggs = false
+task.spawn(function()
+    while true do
+        if _G.AutoSellEggs then
+            pcall(function() fireproximityprompt(prompt) end)
+        end
+        task.wait(SELL_DELAY)
+    end
+end)
+
+--==================================================
+-- AUTO INDEX LOOP (PRIORITY + CLICK + SUIVI MACHINE)
 --==================================================
 task.spawn(function()
     while true do
@@ -136,7 +185,6 @@ task.spawn(function()
             local eggsFolder = workspace:FindFirstChild("Eggs")
             if eggsFolder then
 
-                -- Fonction pour récupérer l’œuf le plus prioritaire
                 local function getHighestPriorityEgg()
                     local target = nil
                     local bestPrio = math.huge
@@ -160,14 +208,13 @@ task.spawn(function()
                     local clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
 
                     if eggPart and clickDetector then
-                        -- Suivi réactif
-                        local followEgg = followTargetRealtime(humanoid, hrp, function()
+                        -- Suivi vers œuf avec pathfinding
+                        local followEgg = followPathRealtime(humanoid, hrp, function()
                             return eggPart.Position
                         end)
 
-                        -- Attendre d’être proche
+                        -- Attendre proche de l’œuf
                         while (hrp.Position - eggPart.Position).Magnitude > 4 and targetEgg.Parent and AutoIndexToggle.CurrentValue do
-                            -- Vérifier si un œuf plus prioritaire apparaît
                             local newTarget, newPriority = getHighestPriorityEgg()
                             if newTarget and newPriority < highestPriority then
                                 targetEgg = newTarget
@@ -180,13 +227,21 @@ task.spawn(function()
                             task.wait(0.05)
                         end
 
-                        -- Stop suivi œuf
                         followEgg:Stop()
 
                         -- Click sur l’œuf
                         if targetEgg.Parent then
                             fireclickdetector(clickDetector)
                             task.wait(0.2)
+
+                            -- Aller vers la machine pour vendre
+                            local followMachine = followPathRealtime(humanoid, hrp, function()
+                                return prompt.Parent.Position
+                            end)
+                            while targetEgg.Parent and AutoIndexToggle.CurrentValue do
+                                task.wait(0.05)
+                            end
+                            followMachine:Stop()
                         end
                     end
                 end
@@ -195,7 +250,6 @@ task.spawn(function()
         task.wait(0.1)
     end
 end)
-
 
 -- Mega index
 local MegaIndexToggle = MainTab:CreateToggle({
