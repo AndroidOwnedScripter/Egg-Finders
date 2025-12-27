@@ -56,14 +56,13 @@ task.spawn(function()
     end
 end)
 
-
 --==================================================
--- MAIN TAB — AUTO FIND EGG + AUTO SELL (PATHFINDING DYNAMIQUE)
+-- MAIN TAB
 --==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
 
 --==================================================
--- 🎛️ RAYFIELD TOGGLE
+-- AUTO FIND EGG TOGGLE
 --==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto find egg + sell",
@@ -100,18 +99,7 @@ for i,v in ipairs(EggPriority) do
 end
 
 --==================================================
--- SERVICES
---==================================================
-local Players = game:GetService("Players")
-local PathfindingService = game:GetService("PathfindingService")
-local player = Players.LocalPlayer
-
-local function getChar()
-    return player.Character or player.CharacterAdded:Wait()
-end
-
---==================================================
--- 🛠️ HUMANOID FIX
+-- HUMANOID FIX
 --==================================================
 local function prepareHumanoid(h, hrp)
     h.PlatformStand = false
@@ -120,7 +108,7 @@ local function prepareHumanoid(h, hrp)
 end
 
 --==================================================
--- 🧠 SMART MOVE + FALLBACK
+-- SMART MOVE + FALLBACK
 --==================================================
 local function smartGoTo(h, hrp, getDestination)
     prepareHumanoid(h, hrp)
@@ -132,28 +120,24 @@ local function smartGoTo(h, hrp, getDestination)
         local dest = getDestination()
         if not dest then return end
 
-        -- ① PATHFINDING
         local path = PathfindingService:CreatePath()
         path:ComputeAsync(hrp.Position, dest)
 
         if path.Status == Enum.PathStatus.Success then
-            for _,wp in ipairs(path:GetWaypoints()) do
+            for _, wp in ipairs(path:GetWaypoints()) do
                 if not AutoIndexToggle.CurrentValue then return end
                 h:MoveTo(wp.Position)
                 if wp.Action == Enum.PathWaypointAction.Jump then
                     h.Jump = true
                 end
-
                 local reached = h.MoveToFinished:Wait(1.5)
                 if not reached then break end
             end
         else
-            -- ② FALLBACK SAFE : marche directe
             h:MoveTo(dest)
             h.MoveToFinished:Wait(1.5)
         end
 
-        -- détection blocage
         if (hrp.Position - lastPos).Magnitude < 1 then
             stuckTimer += 1
         else
@@ -161,7 +145,6 @@ local function smartGoTo(h, hrp, getDestination)
         end
         lastPos = hrp.Position
 
-        -- ③ FALLBACK HARD : mini TP soft
         if stuckTimer >= 3 then
             hrp.CFrame = CFrame.new(dest + Vector3.new(0, 3, 0))
             stuckTimer = 0
@@ -173,50 +156,29 @@ local function smartGoTo(h, hrp, getDestination)
 
         task.wait(0.1)
     end
-end
--- Mega index
+end -- ✅ END MANQUANT FIXÉ ICI
+
+--==================================================
+-- MEGA INDEX
+--==================================================
 local MegaIndexToggle = MainTab:CreateToggle({
     Name = "Mega Index Area",
     CurrentValue = false,
     Flag = "MegaIndex",
     Callback = function(state)
-        local indexArea =
-            workspace:WaitForChild("Map")
-            :WaitForChild("Index")
-            :WaitForChild("IndexArea")
-
-        if not indexArea:IsA("BasePart") then
-            warn("IndexArea n'est pas une BasePart")
-            return
-        end
-
+        local indexArea = workspace.Map.Index.IndexArea
         if state then
-            -- Activer mega index
-            indexArea.Size = Vector3.new(5000, 2000, 5000)
-            indexArea.CFrame = CFrame.new(indexArea.Position)
+            indexArea.Size = Vector3.new(5000,2000,5000)
             indexArea.Transparency = 1
             indexArea.CanCollide = false
-            indexArea.Anchored = true
-            indexArea.Material = Enum.Material.ForceField
-            indexArea.Color = Color3.fromRGB(0, 0, 0)
-            print("✅ Mega Index activé")
         else
-            -- Rétablir taille normale
-            indexArea.Size = Vector3.new(10.88, 8.65, 10.65) -- adapte selon la taille originale
-            indexArea.Transparency = 1
-            indexArea.CanCollide = false
-            indexArea.Anchored = true
-            indexArea.Material = Enum.Material.SmoothPlastic
-            indexArea.Color = Color3.fromRGB(255, 255, 255)
-            print("❌ Mega Index désactivé")
+            indexArea.Size = Vector3.new(10.88,8.65,10.65)
         end
     end
 })
 
-
-
 --==================================================
--- AURA CLICK TOGGLE
+-- AURA CLICK
 --==================================================
 local AuraClickToggle = MainTab:CreateToggle({
     Name = "AuraClick",
@@ -234,13 +196,10 @@ task.spawn(function()
         if _G.AuraClick then
             local char = getCharacter()
             local hrp = char:WaitForChild("HumanoidRootPart")
-            local radius = 10 -- rayon de l'aura (à ajuster)
-
-            -- Chercher tous les ClickDetectors dans la zone
             for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj:IsA("ClickDetector") and obj.Parent then
-                    local part = obj.Parent:IsA("BasePart") and obj.Parent or obj.Parent:FindFirstChildWhichIsA("BasePart", true)
-                    if part and (part.Position - hrp.Position).Magnitude <= radius then
+                if obj:IsA("ClickDetector") then
+                    local part = obj.Parent:FindFirstChildWhichIsA("BasePart", true)
+                    if part and (part.Position - hrp.Position).Magnitude <= 10 then
                         pcall(function()
                             fireclickdetector(obj)
                         end)
@@ -248,7 +207,6 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(0.1) -- vitesse de spam
+        task.wait(0.1)
     end
 end)
-
