@@ -123,7 +123,6 @@ local function moveToPosition(humanoid, hrp, destination)
         if wp.Action == Enum.PathWaypointAction.Jump then
             humanoid.Jump = true
         end
-        -- Boucle réactive pour suivre les mouvements
         while (hrp.Position - wp.Position).Magnitude > 2 do
             task.wait(0.05)
         end
@@ -164,70 +163,66 @@ task.spawn(function()
             local humanoid = char:WaitForChild("Humanoid")
             local eggsFolder = workspace:FindFirstChild("Eggs")
             if eggsFolder then
+
                 -- Trouver l’œuf le plus prioritaire
-                local targetEgg = nil
-                local highestPriority = math.huge
-                for _, egg in ipairs(eggsFolder:GetChildren()) do
-                    if not AutoIndexToggle.CurrentValue then break end
-                    if not AllowedEggs[egg.Name] then continue end
-                    local prio = AllowedEggs[egg.Name]
-                    if prio < highestPriority then
-                        targetEgg = egg
-                        highestPriority = prio
+                local function getHighestPriorityEgg()
+                    local target = nil
+                    local bestPrio = math.huge
+                    for _, egg in ipairs(eggsFolder:GetChildren()) do
+                        if AllowedEggs[egg.Name] then
+                            local prio = AllowedEggs[egg.Name]
+                            if prio < bestPrio then
+                                target = egg
+                                bestPrio = prio
+                            end
+                        end
                     end
+                    return target, bestPrio
                 end
 
+                local targetEgg, highestPriority = getHighestPriorityEgg()
                 if targetEgg then
                     local eggPart = targetEgg:IsA("Model")
                         and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
                         or targetEgg
-                    if eggPart then
-                        local clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
-                        if clickDetector then
-                            -- Bouger vers l’œuf
-                            local targetPos = eggPart.Position
-                            while AutoIndexToggle.CurrentValue and targetEgg.Parent do
-                                -- Vérifier si un œuf plus prioritaire apparaît
-                                local newTarget = nil
-                                local newHighestPriority = highestPriority
-                                for _, egg2 in ipairs(eggsFolder:GetChildren()) do
-                                    if not AllowedEggs[egg2.Name] then continue end
-                                    local prio2 = AllowedEggs[egg2.Name]
-                                    if prio2 < newHighestPriority then
-                                        newTarget = egg2
-                                        newHighestPriority = prio2
-                                    end
-                                end
-                                if newTarget and newTarget ~= targetEgg then
-                                    targetEgg = newTarget
-                                    eggPart = targetEgg:IsA("Model")
-                                        and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
-                                        or targetEgg
-                                    clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
-                                    targetPos = eggPart.Position
-                                end
+                    local clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
 
-                                if (hrp.Position - targetPos).Magnitude > 4 then
-                                    moveToPosition(humanoid, hrp, targetPos)
-                                end
-
-                                if eggPart.Position ~= targetPos then
-                                    targetPos = eggPart.Position
-                                end
-
-                                task.wait(0.05)
+                    if eggPart and clickDetector then
+                        -- Bouger vers l’œuf et surveiller priorités
+                        local targetPos = eggPart.Position
+                        while AutoIndexToggle.CurrentValue and targetEgg.Parent do
+                            -- Vérifier si un œuf plus prioritaire est apparu
+                            local newTarget, newPriority = getHighestPriorityEgg()
+                            if newTarget and newPriority < highestPriority then
+                                targetEgg = newTarget
+                                eggPart = targetEgg:IsA("Model")
+                                    and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
+                                    or targetEgg
+                                clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
+                                targetPos = eggPart.Position
+                                highestPriority = newPriority
                             end
 
-                            -- Click sur l’œuf
-                            if targetEgg.Parent then
-                                fireclickdetector(clickDetector)
-                                task.wait(0.2)
+                            if (hrp.Position - targetPos).Magnitude > 4 then
+                                moveToPosition(humanoid, hrp, targetPos)
+                            end
 
-                                -- Bouger vers la machine tant que l’œuf existe
-                                while AutoIndexToggle.CurrentValue and targetEgg.Parent do
-                                    moveToPosition(humanoid, hrp, prompt.Parent.Position)
-                                    task.wait(0.05)
-                                end
+                            if eggPart.Position ~= targetPos then
+                                targetPos = eggPart.Position
+                            end
+
+                            task.wait(0.05)
+                        end
+
+                        -- Click sur l’œuf
+                        if targetEgg.Parent then
+                            fireclickdetector(clickDetector)
+                            task.wait(0.2)
+
+                            -- Aller vers la machine pour vendre l’œuf
+                            while AutoIndexToggle.CurrentValue and targetEgg.Parent do
+                                moveToPosition(humanoid, hrp, prompt.Parent.Position)
+                                task.wait(0.05)
                             end
                         end
                     end
@@ -237,7 +232,6 @@ task.spawn(function()
         task.wait(0.1)
     end
 end)
-
 
 
 -- Mega index
