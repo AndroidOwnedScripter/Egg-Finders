@@ -302,3 +302,69 @@ task.spawn(function()
         task.wait(0.1) -- vitesse de spam
     end
 end)
+
+
+--==================================================
+-- AUTOSELL
+--==================================================
+
+local AutoSellAuraToggle = MainTab:CreateToggle({
+    Name = "AutoSell",
+    CurrentValue = false,
+    Flag = "AutoSellAura",
+    Callback = function(value)
+        _G.AutoSellAura = value
+    end
+})
+
+_G.AutoSellAura = false
+
+-- SERVICES
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+-- RÉFÉRENCE
+local crusherHitbox = workspace:WaitForChild("Map"):WaitForChild("Crusher"):WaitForChild("Hitbox")
+local prompt = crusherHitbox:WaitForChild("ProximityPrompt")
+
+-- CONFIG HITBOX
+crusherHitbox.Transparency = 1
+crusherHitbox.CanCollide = false
+crusherHitbox.Anchored = true
+
+-- CONFIG PROMPT
+prompt.Enabled = true
+prompt.MaxActivationDistance = math.huge
+prompt.HoldDuration = 0
+prompt.ActionText = ""
+prompt.ObjectText = ""
+prompt.Visible = false
+
+-- LOOP POUR POSITIONNER LA HITBOX DEVANT LE JOUEUR
+RunService.RenderStepped:Connect(function()
+    if _G.AutoSellAura then
+        local char = getCharacter()
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local frontPos = hrp.CFrame.Position + (hrp.CFrame.LookVector * 2)
+            crusherHitbox.CFrame = CFrame.new(frontPos)
+        end
+    end
+end)
+
+-- LOOP POUR SPAM LE PROXIMITY PROMPT
+task.spawn(function()
+    while true do
+        if _G.AutoSellAura then
+            pcall(function()
+                fireproximityprompt(prompt)
+            end)
+        end
+        task.wait(0.5)
+    end
+end)
