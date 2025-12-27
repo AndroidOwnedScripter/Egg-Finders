@@ -111,19 +111,23 @@ local function getCharacter()
 end
 
 --==================================================
--- 🧠 SMART PATHFINDING (ANTI BLOQUAGE / TP SAFE)
+-- 🛠️ HUMANOID FIX (OBLIGATOIRE)
+--==================================================
+local function prepareHumanoid(humanoid, hrp)
+    humanoid.PlatformStand = false
+    humanoid.AutoRotate = true
+    hrp.Anchored = false
+end
+
+--==================================================
+-- 🧠 SMART PATHFINDING (FIX DÉPLACEMENT)
 --==================================================
 local function smartGoTo(humanoid, hrp, getDestination)
-    local lastPos = hrp.Position
+    prepareHumanoid(humanoid, hrp)
 
     while AutoIndexToggle.CurrentValue do
         local dest = getDestination()
         if not dest then return end
-
-        if (hrp.Position - lastPos).Magnitude > 20 then
-            task.wait(0.1)
-        end
-        lastPos = hrp.Position
 
         local path = PathfindingService:CreatePath({
             AgentRadius = 2,
@@ -147,22 +151,12 @@ local function smartGoTo(humanoid, hrp, getDestination)
                 humanoid.Jump = true
             end
 
-            local start = tick()
-            while (hrp.Position - wp.Position).Magnitude > 2 do
-                if not AutoIndexToggle.CurrentValue then return end
-
-                local newDest = getDestination()
-                if not newDest or (newDest - dest).Magnitude > 4 then
-                    break
-                end
-
-                if tick() - start > 1.5 then
-                    break
-                end
-
-                task.wait(0.05)
+            local reached = humanoid.MoveToFinished:Wait()
+            if not reached then
+                break -- recalcul si bloqué
             end
         end
+
         task.wait(0.05)
     end
 end
@@ -208,7 +202,7 @@ task.spawn(function()
                 continue
             end
 
-            -- 🥇 meilleur œuf selon priorité
+            -- 🥇 meilleur œuf par priorité
             local function getBestEgg()
                 local best, prio = nil, math.huge
                 for _, egg in ipairs(eggsFolder:GetChildren()) do
@@ -227,8 +221,8 @@ task.spawn(function()
             end
 
             local eggPart =
-                targetEgg:IsA("Model") and
-                (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
+                targetEgg:IsA("Model")
+                and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
                 or targetEgg
 
             local clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
@@ -237,7 +231,7 @@ task.spawn(function()
                 continue
             end
 
-            -- 🚶 vers l’œuf
+            -- 🚶 ALLER À L’ŒUF
             smartGoTo(humanoid, hrp, function()
                 if not targetEgg.Parent then return nil end
                 return eggPart.Position
@@ -247,7 +241,7 @@ task.spawn(function()
                 fireclickdetector(clickDetector)
                 task.wait(0.2)
 
-                -- 🚚 vers la machine
+                -- 🚚 ALLER À LA MACHINE
                 smartGoTo(humanoid, hrp, function()
                     return prompt.Parent.Position
                 end)
@@ -257,6 +251,7 @@ task.spawn(function()
         end
     end
 end)
+
 
 -- Mega index
 local MegaIndexToggle = MainTab:CreateToggle({
