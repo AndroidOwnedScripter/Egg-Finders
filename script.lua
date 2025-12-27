@@ -58,7 +58,7 @@ end)
 
 
 --==================================================
--- MAIN TAB — AUTO INDEX (inchangé)
+-- MAIN TAB — AUTO INDEX
 --==================================================
 local MainTab = Window:CreateTab("Main", 4483362458)
 
@@ -89,14 +89,14 @@ local EggPriority = {
     "Paintegg","Eg","Pull","Bee","Frogg","Angry"
 }
 
--- Pour lookup rapide
+-- Pour lookup rapide (priorité)
 local AllowedEggs = {}
 for i, name in ipairs(EggPriority) do
-    AllowedEggs[name] = i -- la valeur = priorité
+    AllowedEggs[name] = i
 end
 
 --==================================================
--- PATHFINDING MOVE (INCHANGÉ)
+-- PATHFINDING MOVE
 --==================================================
 local function moveToPosition(humanoid, hrp, destination)
     local path = PathfindingService:CreatePath({
@@ -122,7 +122,7 @@ local function moveToPosition(humanoid, hrp, destination)
 end
 
 --==================================================
--- AUTO INDEX LOOP (PRIORITY + CLICK)
+-- AUTO INDEX LOOP (PRIORITY + CLICK + REPRISE)
 --==================================================
 task.spawn(function()
     while true do
@@ -155,12 +155,40 @@ task.spawn(function()
                         local clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
                         if clickDetector then
 
-                            -- 🧭 Walk to egg
-                            moveToPosition(humanoid, hrp, eggPart.Position)
-
-                            -- Attendre proche
+                            -- 🧭 Walk to egg avec reprise si le joueur bouge
+                            local targetPos = eggPart.Position
                             while AutoIndexToggle.CurrentValue and targetEgg.Parent do
-                                if (hrp.Position - eggPart.Position).Magnitude <= 4 then break end
+                                -- Vérifier si un œuf plus prioritaire apparaît
+                                local newTarget = nil
+                                local newHighestPriority = highestPriority
+                                for _, egg2 in ipairs(eggsFolder:GetChildren()) do
+                                    if not AllowedEggs[egg2.Name] then continue end
+                                    local prio2 = AllowedEggs[egg2.Name]
+                                    if prio2 < newHighestPriority then
+                                        newTarget = egg2
+                                        newHighestPriority = prio2
+                                    end
+                                end
+                                if newTarget and newTarget ~= targetEgg then
+                                    targetEgg = newTarget
+                                    eggPart = targetEgg:IsA("Model")
+                                        and (targetEgg.PrimaryPart or targetEgg:FindFirstChildWhichIsA("BasePart", true))
+                                        or targetEgg
+                                    clickDetector = targetEgg:FindFirstChildWhichIsA("ClickDetector", true)
+                                    targetPos = eggPart.Position
+                                end
+
+                                -- Si proche, break
+                                if (hrp.Position - targetPos).Magnitude <= 4 then break end
+
+                                -- Bouger vers l’œuf
+                                moveToPosition(humanoid, hrp, targetPos)
+
+                                -- Recalculer position si l’œuf a bougé
+                                if eggPart.Position ~= targetPos then
+                                    targetPos = eggPart.Position
+                                end
+
                                 task.wait(0.1)
                             end
 
