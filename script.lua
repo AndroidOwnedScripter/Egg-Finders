@@ -290,7 +290,7 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(1.5) -- vitesse de spam
+        task.wait(0.5) -- vitesse de spam
     end
 end)
 
