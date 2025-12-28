@@ -25,7 +25,7 @@ local function getCharacter()
 end
 
 --==================================================
--- EVENT TAB — AUTO ORB (INCHANGÉ)
+-- EVENT TAB — AUTO ORB (TOUCHINTEREST)
 --==================================================
 local EventTab = Window:CreateTab("Event", 4483362458)
 
@@ -46,7 +46,9 @@ task.spawn(function()
             if orbsFolder then
                 for _, orb in ipairs(orbsFolder:GetChildren()) do
                     if orb:IsA("BasePart") and orb.Name == "ItemOrb" then
-                        hrp.CFrame = orb.CFrame + Vector3.new(0, 3, 0)
+                        -- 🔥 SIMULE LE CONTACT
+                        firetouchinterest(hrp, orb, 0) -- Touch
+                        firetouchinterest(hrp, orb, 1) -- Untouch
                         break
                     end
                 end
@@ -55,6 +57,7 @@ task.spawn(function()
         task.wait(0.2)
     end
 end)
+
 
 --==================================================
 -- MAIN TAB
