@@ -66,19 +66,20 @@ local MainTab = Window:CreateTab("Main", 4483362458)
 
 
 --==================================================
--- Auto find + Sell
+-- AUTO FIND EGG + SELL (TP MODE FINAL)
 --==================================================
+
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "Auto Find Egg + Sell (SMART)",
+    Name = "Auto Find Egg + Sell [TP]",
     CurrentValue = false,
-    Flag = "AutoIndex",
+    Flag = "AutoIndexTP",
     Callback = function(v)
         _G.AutoIndex = v
     end
 })
 
 --==================================================
--- PRIORITY LIST (TA LISTE)
+-- PRIORITY LIST (INCHANGÉE)
 --==================================================
 local EggPriority = {
     "Malware","Quantum","ERR0R","Shiny Quantum","Shiny Golden","Shiny Blueberregg",
@@ -97,16 +98,15 @@ local EggPriority = {
     "Seedlegg","Paintegg","Eg","Pull","Bee","Frogg","Angry","Grass"
 }
 
-local AllowedEggs = {}
-for i,v in ipairs(EggPriority) do
-    AllowedEggs[v] = i
+local EggRank = {}
+for i, v in ipairs(EggPriority) do
+    EggRank[v] = i
 end
 
 --==================================================
 -- SERVICES
 --==================================================
 local Players = game:GetService("Players")
-local PathfindingService = game:GetService("PathfindingService")
 local player = Players.LocalPlayer
 
 local function getChar()
@@ -114,83 +114,74 @@ local function getChar()
 end
 
 --==================================================
--- SMART MOVE (ANTI INTERRUPTION)
+-- TP FUNCTION (SAFE + STABLE)
 --==================================================
-local function smartMove(humanoid, hrp, destination, cancelCheck)
-    local path = PathfindingService:CreatePath({
-        AgentRadius = 2,
-        AgentHeight = 5,
-        AgentCanJump = true,
-        AgentJumpHeight = 7,
-        AgentMaxSlope = 45
-    })
+local function tpTo(hrp, pos)
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
 
-    path:ComputeAsync(hrp.Position, destination)
-    if path.Status ~= Enum.PathStatus.Success then return false end
-
-    for _, wp in ipairs(path:GetWaypoints()) do
-        while _G.AutoIndex do
-            if cancelCheck and cancelCheck() then return false end
-
-            humanoid:MoveTo(wp.Position)
-            if wp.Action == Enum.PathWaypointAction.Jump then
-                humanoid.Jump = true
-            end
-
-            local dist = (hrp.Position - wp.Position).Magnitude
-            if dist <= 2 then break end
-
-            task.wait(0.1)
-        end
+    for i = 1, 2 do
+        hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+        task.wait()
     end
-    return true
 end
 
 --==================================================
 -- MAIN LOOP
 --==================================================
 task.spawn(function()
-    while true do
-        if _G.AutoIndex then
-            local char = getChar()
-            local humanoid = char:WaitForChild("Humanoid")
-            local hrp = char:WaitForChild("HumanoidRootPart")
+    while task.wait(0.15) do
+        if not _G.AutoIndex then continue end
 
-            local eggsFolder = workspace:FindFirstChild("Eggs")
-            if not eggsFolder then task.wait(0.3) continue end
+        local char = getChar()
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then continue end
 
-            -- 🔍 Find best egg
-            local target, bestPrio
-            for _, egg in ipairs(eggsFolder:GetChildren()) do
-                local p = AllowedEggs[egg.Name]
-                if p and (not bestPrio or p < bestPrio) then
-                    target, bestPrio = egg, p
-                end
+        local eggsFolder = workspace:FindFirstChild("Eggs")
+        if not eggsFolder then continue end
+
+        -- 🔍 SELECT BEST EGG
+        local target, bestRank
+        for _, egg in ipairs(eggsFolder:GetChildren()) do
+            local r = EggRank[egg.Name]
+            if r and (not bestRank or r < bestRank) then
+                target = egg
+                bestRank = r
             end
-            if not target then task.wait(0.3) continue end
+        end
+        if not target then continue end
 
-            local eggPart = target:IsA("Model")
-                and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true))
-                or target
-            local click = target:FindFirstChildWhichIsA("ClickDetector", true)
-            if not (eggPart and click) then task.wait(0.2) continue end
+        -- 🎯 GET PART
+        local eggPart =
+            target:IsA("Model")
+            and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true))
+            or target
 
-            -- 🚶 Go to egg
-            smartMove(humanoid, hrp, eggPart.Position, function()
-                return not target.Parent
-            end)
+        local click = target:FindFirstChildWhichIsA("ClickDetector", true)
+        if not (eggPart and click) then continue end
 
-            if target.Parent and (hrp.Position - eggPart.Position).Magnitude <= 5 then
-                fireclickdetector(click)
-            end
+        -- 🥚 TP + CLICK EGG
+        if target.Parent then
+            tpTo(hrp, eggPart.Position)
+            fireclickdetector(click)
+        end
 
-            -- 🏭 Go to machine
-            local prompt = workspace.Map.Crusher.Hitbox:FindFirstChild("ProximityPrompt")
+        task.wait(0.15)
+
+        -- 🏭 MACHINE
+        local crusher = workspace.Map
+            and workspace.Map:FindFirstChild("Crusher")
+            and workspace.Map.Crusher:FindFirstChild("Hitbox")
+
+        if crusher then
+            local prompt = crusher:FindFirstChildWhichIsA("ProximityPrompt", true)
             if prompt then
-                smartMove(humanoid, hrp, prompt.Parent.Position)
+                -- TP DIRECT SUR LA PART (comme demandé)
+                tpTo(hrp, crusher.Position)
 
-                while _G.AutoIndex
-                and (hrp.Position - prompt.Parent.Position).Magnitude <= 7 do
+                -- SPAM PROMPT
+                local start = tick()
+                while _G.AutoIndex and tick() - start < 6 do
                     pcall(function()
                         fireproximityprompt(prompt)
                     end)
@@ -198,7 +189,6 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(0.2)
     end
 end)
 
