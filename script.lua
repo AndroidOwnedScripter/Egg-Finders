@@ -68,14 +68,6 @@ local MainTab = Window:CreateTab("Main", 4483362458)
 --==================================================
 -- AUTO FIND EGG + SELL (SMART PATH + PRIORITY)
 --==================================================
-
-local Players = game:GetService("Players")
-local PathfindingService = game:GetService("PathfindingService")
-local player = Players.LocalPlayer
-
---==================================================
--- TOGGLE
---==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto Find Egg + Sell (Smart)",
     CurrentValue = false,
