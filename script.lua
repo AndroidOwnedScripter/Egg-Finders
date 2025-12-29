@@ -77,7 +77,7 @@ local function getChar()
 end
 
 --==================================================
--- RAYFIELD TOGGLE (ASSUME Window & MainTab EXIST)
+-- RAYFIELD TOGGLE 
 --==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto Find Egg + Sell [Pathfinding]",
@@ -112,36 +112,49 @@ for i,v in ipairs(EggPriority) do
 end
 
 --==================================================
--- PATHFINDING FUNCTION
+-- PATHFINDING FUNCTION AVEC RECALCUL AUTOMATIQUE
 --==================================================
 local function moveTo(humanoid, hrp, targetPos)
-    local path = PathfindingService:CreatePath({
-        AgentRadius = 2,
-        AgentHeight = 5,
-        AgentCanJump = true,
-        AgentJumpHeight = 7,
-        AgentMaxSlope = 45
-    })
-
-    -- Utiliser le sol comme référence pour le calcul
-    local ground = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Grass")
-    if ground then
+    local function computePath()
+        local path = PathfindingService:CreatePath({
+            AgentRadius = 2,
+            AgentHeight = 5,
+            AgentCanJump = true,
+            AgentJumpHeight = 7,
+            AgentMaxSlope = 45
+        })
         path:ComputeAsync(hrp.Position, targetPos)
-        if path.Status ~= Enum.PathStatus.Success then
-            return false
+        return path
+    end
+
+    local path = computePath()
+    if path.Status ~= Enum.PathStatus.Success then return false end
+
+    local waypoints = path:GetWaypoints()
+    local wpIndex = 1
+
+    while AutoIndexToggle.CurrentValue and wpIndex <= #waypoints do
+        local wp = waypoints[wpIndex]
+
+        humanoid:MoveTo(wp.Position)
+        if wp.Action == Enum.PathWaypointAction.Jump then
+            humanoid.Jump = true
         end
 
-        for _, wp in ipairs(path:GetWaypoints()) do
-            if not AutoIndexToggle.CurrentValue then return false end
-            humanoid:MoveTo(wp.Position)
-            if wp.Action == Enum.PathWaypointAction.Jump then
-                humanoid.Jump = true
-            end
-            humanoid.MoveToFinished:Wait()
+        local reached = humanoid.MoveToFinished:Wait()
+        -- recalcul si joueur bouge trop loin ou œuf disparaît
+        local dist = (hrp.Position - wp.Position).Magnitude
+        if dist > 3 then
+            path = computePath()
+            if path.Status ~= Enum.PathStatus.Success then return false end
+            waypoints = path:GetWaypoints()
+            wpIndex = 1
+            continue
         end
-        return true
+
+        wpIndex += 1
     end
-    return false
+    return true
 end
 
 --==================================================
@@ -200,7 +213,7 @@ task.spawn(function()
         local reachedMachine = moveTo(humanoid, hrp, crusher.Position)
         if not reachedMachine then task.wait(0.2) continue end
 
-        -- 🔁 spam prompt tant qu'on est proche et que toggle activé
+        -- 🔁 spam prompt tant qu'on est proche et toggle activé
         while AutoIndexToggle.CurrentValue and target.Parent and (hrp.Position - crusher.Position).Magnitude <= 7 do
             pcall(function()
                 fireproximityprompt(prompt)
