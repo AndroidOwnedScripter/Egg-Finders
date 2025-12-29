@@ -75,7 +75,7 @@ end
 --==================================================
 -- TOGGLE
 --==================================================
-local SantaBypassToggle = MainTab:CreateToggle({
+local SantaBypassToggle = EventTab:CreateToggle({
     Name = "[🎅] Go To Santa",
     CurrentValue = false,
     Flag = "SantaBypass",
