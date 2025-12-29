@@ -58,6 +58,98 @@ task.spawn(function()
     end
 end)
 
+--==================================================
+-- SERVICES
+--==================================================
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local noclipConn
+
+local function getChar()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+--==================================================
+-- TOGGLE
+--==================================================
+local SantaBypassToggle = EventTab:CreateToggle({
+    Name = "Go to santa",
+    CurrentValue = false,
+    Flag = "SantaBypass",
+    Callback = function(state)
+        local char = getChar()
+        local humanoid = char:WaitForChild("Humanoid")
+        local hrp = char:WaitForChild("HumanoidRootPart")
+
+        if state then
+            ------------------------------------------------
+            -- NOCLIP
+            ------------------------------------------------
+            noclipConn = RunService.Stepped:Connect(function()
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end)
+
+            ------------------------------------------------
+            -- SWIM MODE
+            ------------------------------------------------
+            humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+
+            ------------------------------------------------
+            -- DELETE OBJECT
+            ------------------------------------------------
+            pcall(function()
+                local child30 = workspace:GetChildren()[30]
+                if child30 and child30:FindFirstChild("Dont delete this brah") then
+                    child30["Dont delete this brah"]:Destroy()
+                end
+            end)
+
+            ------------------------------------------------
+            -- TWEEN TO SANTA
+            ------------------------------------------------
+            local santaFolder = workspace:FindFirstChild("NPCs")
+            local santa = santaFolder and santaFolder:FindFirstChild("Santa")
+
+            if santa then
+                local santaPart =
+                    santa:IsA("Model")
+                    and (santa.PrimaryPart or santa:FindFirstChildWhichIsA("BasePart", true))
+                    or santa
+
+                if santaPart then
+                    local tween = TweenService:Create(
+                        hrp,
+                        TweenInfo.new(
+                            (hrp.Position - santaPart.Position).Magnitude / 20,
+                            Enum.EasingStyle.Linear
+                        ),
+                        { CFrame = santaPart.CFrame * CFrame.new(0, 0, -3) }
+                    )
+                    tween:Play()
+                end
+            end
+
+        else
+            ------------------------------------------------
+            -- DISABLE
+            ------------------------------------------------
+            if noclipConn then
+                noclipConn:Disconnect()
+                noclipConn = nil
+            end
+
+            humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        end
+    end
+})
+
 
 --==================================================
 -- MAIN TAB
