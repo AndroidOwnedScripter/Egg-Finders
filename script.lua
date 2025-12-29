@@ -70,19 +70,20 @@ local MainTab = Window:CreateTab("Main", 4483362458)
 --==================================================
 local Players = game:GetService("Players")
 local PathfindingService = game:GetService("PathfindingService")
-local player = Players.LocalPlayer
+local RunService = game:GetService("RunService")
 
+local player = Players.LocalPlayer
 local function getChar()
     return player.Character or player.CharacterAdded:Wait()
 end
 
 --==================================================
--- RAYFIELD TOGGLE 
+-- RAYFIELD TOGGLE (ASSUME Window & MainTab EXIST)
 --==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "Auto Find Egg + Sell [Pathfinding]",
+    Name = "Auto Find Egg + Sell [Dynamic Pathfinding]",
     CurrentValue = false,
-    Flag = "AutoEggSellPath",
+    Flag = "AutoEggSellDynamicPath",
     Callback = function() end
 })
 
@@ -112,53 +113,87 @@ for i,v in ipairs(EggPriority) do
 end
 
 --==================================================
--- PATHFINDING FUNCTION AVEC RECALCUL AUTOMATIQUE
+-- PATHFINDING CONTINUOUS (DYNAMIC)
 --==================================================
-local function moveTo(humanoid, hrp, targetPos)
+local function moveToDynamic(humanoid, hrp, targetPos)
+    local path, waypoints, wpIndex
+
     local function computePath()
-        local path = PathfindingService:CreatePath({
+        local newPath = PathfindingService:CreatePath({
             AgentRadius = 2,
             AgentHeight = 5,
             AgentCanJump = true,
             AgentJumpHeight = 7,
             AgentMaxSlope = 45
         })
-        path:ComputeAsync(hrp.Position, targetPos)
-        return path
+        newPath:ComputeAsync(hrp.Position, targetPos)
+        if newPath.Status == Enum.PathStatus.Success then
+            return newPath, newPath:GetWaypoints()
+        else
+            return nil, {}
+        end
     end
 
-    local path = computePath()
-    if path.Status ~= Enum.PathStatus.Success then return false end
+    path, waypoints = computePath()
+    wpIndex = 1
+    if not path then return false end
 
-    local waypoints = path:GetWaypoints()
-    local wpIndex = 1
-
-    while AutoIndexToggle.CurrentValue and wpIndex <= #waypoints do
+    while AutoIndexToggle.CurrentValue and (hrp.Position - targetPos).Magnitude > 5 do
         local wp = waypoints[wpIndex]
+        if not wp then
+            path, waypoints = computePath()
+            wpIndex = 1
+            task.wait(0.1)
+            continue
+        end
 
         humanoid:MoveTo(wp.Position)
         if wp.Action == Enum.PathWaypointAction.Jump then
             humanoid.Jump = true
         end
 
-        local reached = humanoid.MoveToFinished:Wait()
-        -- recalcul si joueur bouge trop loin ou œuf disparaît
-        local dist = (hrp.Position - wp.Position).Magnitude
-        if dist > 3 then
-            path = computePath()
-            if path.Status ~= Enum.PathStatus.Success then return false end
-            waypoints = path:GetWaypoints()
-            wpIndex = 1
-            continue
+        local reached = false
+        while not reached and AutoIndexToggle.CurrentValue do
+            local dist = (hrp.Position - wp.Position).Magnitude
+
+            -- recalcul si joueur s'éloigne du chemin
+            if dist > 4 then
+                path, waypoints = computePath()
+                wpIndex = 1
+                break
+            end
+
+            if dist <= 2 then
+                reached = true
+            end
+            task.wait(0.03)
         end
 
         wpIndex += 1
     end
+
     return true
 end
 
 --==================================================
--- LOOP PRINCIPAL
+-- TROUVER L’EGG PRIORITAIRE DYNAMIQUE
+--==================================================
+local function findTopEgg()
+    local eggsFolder = workspace:FindFirstChild("Eggs")
+    if not eggsFolder then return nil end
+
+    local topEgg, bestPrio
+    for _, egg in ipairs(eggsFolder:GetChildren()) do
+        local p = AllowedEggs[egg.Name]
+        if p and (not bestPrio or p < bestPrio) then
+            topEgg, bestPrio = egg, p
+        end
+    end
+    return topEgg
+end
+
+--==================================================
+-- LOOP PRINCIPAL DYNAMIQUE
 --==================================================
 task.spawn(function()
     while true do
@@ -170,27 +205,19 @@ task.spawn(function()
         local char = getChar()
         local humanoid = char:WaitForChild("Humanoid")
         local hrp = char:WaitForChild("HumanoidRootPart")
-        local eggsFolder = workspace:FindFirstChild("Eggs")
         local crusher = workspace.Map.Crusher.Hitbox
-        if not (eggsFolder and crusher) then
+        if not crusher then
             task.wait(0.3)
             continue
         end
 
-        -- 🔎 choisir l’egg le plus prioritaire ACTUEL
-        local target, bestPrio
-        for _, egg in ipairs(eggsFolder:GetChildren()) do
-            local p = AllowedEggs[egg.Name]
-            if p and (not bestPrio or p < bestPrio) then
-                target, bestPrio = egg, p
-            end
-        end
+        -- 🥚 chercher le meilleur œuf dynamique
+        local target = findTopEgg()
         if not target then
-            task.wait(0.3)
+            task.wait(0.2)
             continue
         end
 
-        -- 🧱 trouver la part réelle
         local eggPart =
             target:IsA("Model")
             and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true))
@@ -198,8 +225,8 @@ task.spawn(function()
         local clickDetector = target:FindFirstChildWhichIsA("ClickDetector", true)
         if not (eggPart and clickDetector) then task.wait(0.2) continue end
 
-        -- 🚶‍♂️ marcher vers l’egg
-        local reachedEgg = moveTo(humanoid, hrp, eggPart.Position)
+        -- 🚶‍♂️ marcher vers l’œuf
+        local reachedEgg = moveToDynamic(humanoid, hrp, eggPart.Position)
         if not (reachedEgg and target.Parent) then task.wait(0.2) continue end
 
         -- 🖱️ click egg
@@ -210,14 +237,22 @@ task.spawn(function()
         local prompt = crusher:FindFirstChildWhichIsA("ProximityPrompt", true)
         if not prompt then task.wait(0.2) continue end
 
-        local reachedMachine = moveTo(humanoid, hrp, crusher.Position)
+        local reachedMachine = moveToDynamic(humanoid, hrp, crusher.Position)
         if not reachedMachine then task.wait(0.2) continue end
 
-        -- 🔁 spam prompt tant qu'on est proche et toggle activé
+        -- 🔁 spam prompt tant qu'on est proche et que toggle activé
         while AutoIndexToggle.CurrentValue and target.Parent and (hrp.Position - crusher.Position).Magnitude <= 7 do
             pcall(function()
                 fireproximityprompt(prompt)
             end)
+
+            -- 🥚 vérifier si un œuf de priorité plus haute apparaît
+            local newTopEgg = findTopEgg()
+            if newTopEgg and newTopEgg ~= target then
+                target = newTopEgg
+                break -- recalcul dynamique vers le nouvel œuf
+            end
+
             task.wait(0.1)
         end
 
@@ -225,7 +260,6 @@ task.spawn(function()
         task.wait(0.2)
     end
 end)
-
 
 --==================================================
 -- Mega index
