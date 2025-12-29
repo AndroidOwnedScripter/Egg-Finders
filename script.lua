@@ -75,8 +75,8 @@ end
 --==================================================
 -- TOGGLE
 --==================================================
-local SantaBypassToggle = EventTab:CreateToggle({
-    Name = "Go to santa",
+local SantaBypassToggle = MainTab:CreateToggle({
+    Name = "[🎅] Go To Santa",
     CurrentValue = false,
     Flag = "SantaBypass",
     Callback = function(state)
@@ -102,12 +102,15 @@ local SantaBypassToggle = EventTab:CreateToggle({
             humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
 
             ------------------------------------------------
-            -- DELETE OBJECT
+            -- DELETE OBJECT (workspace.Eggs)
             ------------------------------------------------
             pcall(function()
-                local child30 = workspace:GetChildren()[30]
-                if child30 and child30:FindFirstChild("Dont delete this brah") then
-                    child30["Dont delete this brah"]:Destroy()
+                local eggsFolder = workspace:FindFirstChild("Eggs")
+                if eggsFolder then
+                    local obj = eggsFolder:FindFirstChild("Dont delete this brah")
+                    if obj then
+                        obj:Destroy()
+                    end
                 end
             end)
 
@@ -149,7 +152,6 @@ local SantaBypassToggle = EventTab:CreateToggle({
         end
     end
 })
-
 
 --==================================================
 -- MAIN TAB
