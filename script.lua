@@ -459,6 +459,7 @@ task.spawn(function()
         -- 🥚 chercher l’œuf prioritaire
         local target = findTopEgg()
         if not target then
+            -- Supprimer les flèches si aucun œuf
             for _, arrow in ipairs(currentArrows) do
                 if arrow and arrow.Parent then arrow:Destroy() end
             end
@@ -480,4 +481,8 @@ task.spawn(function()
         currentArrows = {}
 
         -- créer nouveau chemin visuel
-        currentArrows = visualiz
+        currentArrows = visualizePath(hrp, eggPart.Position)
+
+        task.wait(0.2) -- petite pause avant recalcul
+    end
+end)
