@@ -69,9 +69,9 @@ local MainTab = Window:CreateTab("Main", 4483362458)
 -- SERVICES
 --==================================================
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-
+local PathfindingService = game:GetService("PathfindingService")
 local player = Players.LocalPlayer
+
 local function getChar()
     return player.Character or player.CharacterAdded:Wait()
 end
@@ -80,14 +80,14 @@ end
 -- RAYFIELD TOGGLE (ASSUME Window & MainTab EXIST)
 --==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "Auto Find Egg + Sell [Tween]",
+    Name = "Auto Find Egg + Sell [Pathfinding]",
     CurrentValue = false,
-    Flag = "AutoEggSell",
+    Flag = "AutoEggSellPath",
     Callback = function() end
 })
 
 --==================================================
--- EGG PRIORITY LIST (TA LISTE, ORDRE = PRIORITÉ)
+-- EGG PRIORITY LIST
 --==================================================
 local EggPriority = {
     "Malware","Quantum","ERR0R","Shiny Quantum","Shiny Golden","Shiny Blueberregg",
@@ -107,42 +107,45 @@ local EggPriority = {
 }
 
 local AllowedEggs = {}
-for i, v in ipairs(EggPriority) do
+for i,v in ipairs(EggPriority) do
     AllowedEggs[v] = i
 end
 
 --==================================================
--- TWEEN WALK (REMPLACE TP / PATHFINDING)
+-- PATHFINDING FUNCTION
 --==================================================
-local function tweenWalkTo(humanoid, hrp, destination)
-    if not destination then return end
+local function moveTo(humanoid, hrp, targetPos)
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true,
+        AgentJumpHeight = 7,
+        AgentMaxSlope = 45
+    })
 
-    humanoid.AutoRotate = true
-    local speed = humanoid.WalkSpeed
-    local stepTime = 0.12
+    -- Utiliser le sol comme référence pour le calcul
+    local ground = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Grass")
+    if ground then
+        path:ComputeAsync(hrp.Position, targetPos)
+        if path.Status ~= Enum.PathStatus.Success then
+            return false
+        end
 
-    while AutoIndexToggle.CurrentValue
-        and (hrp.Position - destination).Magnitude > 5 do
-
-        local dir = (destination - hrp.Position)
-        if dir.Magnitude < 1 then break end
-
-        humanoid:Move(dir.Unit, false)
-
-        local step = dir.Unit * math.min(dir.Magnitude, speed * stepTime)
-        local tween = TweenService:Create(
-            hrp,
-            TweenInfo.new(stepTime, Enum.EasingStyle.Linear),
-            { CFrame = CFrame.new(hrp.Position + step, destination) }
-        )
-
-        tween:Play()
-        tween.Completed:Wait()
+        for _, wp in ipairs(path:GetWaypoints()) do
+            if not AutoIndexToggle.CurrentValue then return false end
+            humanoid:MoveTo(wp.Position)
+            if wp.Action == Enum.PathWaypointAction.Jump then
+                humanoid.Jump = true
+            end
+            humanoid.MoveToFinished:Wait()
+        end
+        return true
     end
+    return false
 end
 
 --==================================================
--- MAIN LOOP
+-- LOOP PRINCIPAL
 --==================================================
 task.spawn(function()
     while true do
@@ -154,9 +157,12 @@ task.spawn(function()
         local char = getChar()
         local humanoid = char:WaitForChild("Humanoid")
         local hrp = char:WaitForChild("HumanoidRootPart")
-
         local eggsFolder = workspace:FindFirstChild("Eggs")
-        if not eggsFolder then task.wait(0.2) continue end
+        local crusher = workspace.Map.Crusher.Hitbox
+        if not (eggsFolder and crusher) then
+            task.wait(0.3)
+            continue
+        end
 
         -- 🔎 choisir l’egg le plus prioritaire ACTUEL
         local target, bestPrio
@@ -166,47 +172,47 @@ task.spawn(function()
                 target, bestPrio = egg, p
             end
         end
-        if not target then task.wait(0.2) continue end
+        if not target then
+            task.wait(0.3)
+            continue
+        end
 
         -- 🧱 trouver la part réelle
         local eggPart =
             target:IsA("Model")
             and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true))
             or target
-
         local clickDetector = target:FindFirstChildWhichIsA("ClickDetector", true)
         if not (eggPart and clickDetector) then task.wait(0.2) continue end
 
         -- 🚶‍♂️ marcher vers l’egg
-        tweenWalkTo(humanoid, hrp, eggPart.Position)
-
-        if not (AutoIndexToggle.CurrentValue and target.Parent) then
-            continue
-        end
+        local reachedEgg = moveTo(humanoid, hrp, eggPart.Position)
+        if not (reachedEgg and target.Parent) then task.wait(0.2) continue end
 
         -- 🖱️ click egg
         fireclickdetector(clickDetector)
         task.wait(0.2)
 
         -- 🏭 aller à la machine
-        local crusher = workspace.Map.Crusher.Hitbox
         local prompt = crusher:FindFirstChildWhichIsA("ProximityPrompt", true)
-        if not prompt then continue end
+        if not prompt then task.wait(0.2) continue end
 
-        tweenWalkTo(humanoid, hrp, crusher.Position)
+        local reachedMachine = moveTo(humanoid, hrp, crusher.Position)
+        if not reachedMachine then task.wait(0.2) continue end
 
-        -- 🔁 spam prompt
-        while AutoIndexToggle.CurrentValue
-            and (hrp.Position - crusher.Position).Magnitude <= 7 do
+        -- 🔁 spam prompt tant qu'on est proche et que toggle activé
+        while AutoIndexToggle.CurrentValue and target.Parent and (hrp.Position - crusher.Position).Magnitude <= 7 do
             pcall(function()
                 fireproximityprompt(prompt)
             end)
             task.wait(0.1)
         end
 
+        -- ✅ après spam, recommence immédiatement la recherche
         task.wait(0.2)
     end
 end)
+
 
 --==================================================
 -- Mega index
