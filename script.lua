@@ -341,3 +341,143 @@ task.spawn(function()
 end)
 
 
+--==================================================
+-- SERVICES
+--==================================================
+local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local function getChar()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+--==================================================
+-- TOGGLE FLECHES INDICATION D'OEUFS
+--==================================================
+local VisualPathToggle = MainTab:CreateToggle({
+    Name = "Egg indication",
+    CurrentValue = false,
+    Flag = "VisualEggPath",
+    Callback = function() end
+})
+
+--==================================================
+-- EGG PRIORITY LIST
+--==================================================
+local EggPriority = {
+    "Malware","Quantum","ERR0R","Shiny Quantum","Shiny Golden","Shiny Blueberregg",
+    "Shiny Rategg","Shiny Wategg","Shiny Fire","Shiny Ghost","Shiny Iron","Shiny Fish",
+    "Shiny Glass","Shiny Corroded","Shiny Grass","Shiny Egg","Angel","Golden Santegg",
+    "Ice Candy","Santegg","Gingerbread","Nutcracker","Elf","Fruitcake","Penguin Egg",
+    "Evil","Cerials","Draculegg","Grave","Hellish","Witch","Zombegg","Candy Corn",
+    "Spidegg","Skeleton","Pumpegg","Orange","God","Alien","Matterless","Royal",
+    "Ruby Faberge","Sapphire","Darkness","Infinitegg","Ruby","Blackhole","Burger",
+    "Layered","Mustard","Chiken Stars","Fake God","London","Mango","Crabegg PRIME",
+    "Money","Tix","Rich","Timeless","Grunch","Richest","Celebration","2025 Meme Trophy",
+    "Reverie","Seraphim","Winning Egg","Admegg","Capybaregg","JackoLantegg","Doodle’s",
+    "Veri Epik Eg","StarFall","DogEgg","Super Ghost","Paradox","Holy","Squid","Golden",
+    "RoEgg","Blueberregg","Crabegg","CartRide","Appegg","Ice","Eggday","Sun","Orangegg",
+    "Electricitegg","Banana","Corrupted","Iglegg","Cheese","Magma","Wild","Core",
+    "Seedlegg","Paintegg","Eg","Pull","Bee","Frogg","Angry","Grass"
+}
+
+local AllowedEggs = {}
+for i,v in ipairs(EggPriority) do
+    AllowedEggs[v] = i
+end
+
+--==================================================
+-- FONCTIONS PATHFINDING VISUEL
+--==================================================
+local function findTopEgg()
+    local eggsFolder = workspace:FindFirstChild("Eggs")
+    if not eggsFolder then return nil end
+
+    local topEgg, bestPrio
+    for _, egg in ipairs(eggsFolder:GetChildren()) do
+        local p = AllowedEggs[egg.Name]
+        if p and (not bestPrio or p < bestPrio) then
+            topEgg, bestPrio = egg, p
+        end
+    end
+    return topEgg
+end
+
+local function createArrow(position)
+    local arrow = Instance.new("Part")
+    arrow.Size = Vector3.new(0.5,0.5,0.5)
+    arrow.Anchored = true
+    arrow.CanCollide = false
+    arrow.Material = Enum.Material.Neon
+    arrow.Color = Color3.fromRGB(255,0,0)
+    arrow.CFrame = CFrame.new(position)
+    arrow.Shape = Enum.PartType.Block
+    arrow.Parent = workspace
+    return arrow
+end
+
+local function visualizePath(hrp, targetPos)
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true,
+        AgentJumpHeight = 7,
+        AgentMaxSlope = 45
+    })
+
+    path:ComputeAsync(hrp.Position, targetPos)
+    if path.Status ~= Enum.PathStatus.Success then return {} end
+
+    local arrows = {}
+    for _, wp in ipairs(path:GetWaypoints()) do
+        table.insert(arrows, createArrow(wp.Position + Vector3.new(0,1,0)))
+    end
+    return arrows
+end
+
+--==================================================
+-- LOOP PRINCIPAL VISUAL PATH
+--==================================================
+local currentArrows = {}
+task.spawn(function()
+    while true do
+        if not VisualPathToggle.CurrentValue then
+            -- Supprimer les flèches si toggle off
+            for _, arrow in ipairs(currentArrows) do
+                if arrow and arrow.Parent then arrow:Destroy() end
+            end
+            currentArrows = {}
+            task.wait(0.2)
+            continue
+        end
+
+        local char = getChar()
+        local hrp = char:WaitForChild("HumanoidRootPart")
+
+        -- 🥚 chercher l’œuf prioritaire
+        local target = findTopEgg()
+        if not target then
+            for _, arrow in ipairs(currentArrows) do
+                if arrow and arrow.Parent then arrow:Destroy() end
+            end
+            currentArrows = {}
+            task.wait(0.3)
+            continue
+        end
+
+        local eggPart =
+            target:IsA("Model")
+            and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true))
+            or target
+        if not eggPart then task.wait(0.2) continue end
+
+        -- supprimer anciennes flèches
+        for _, arrow in ipairs(currentArrows) do
+            if arrow and arrow.Parent then arrow:Destroy() end
+        end
+        currentArrows = {}
+
+        -- créer nouveau chemin visuel
+        currentArrows = visualiz
