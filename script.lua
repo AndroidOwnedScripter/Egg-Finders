@@ -66,17 +66,28 @@ local MainTab = Window:CreateTab("Main", 4483362458)
 
 
 --==================================================
--- AUTO FIND EGG + SELL (SMART PATH + PRIORITY)
+-- SERVICES
+--==================================================
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local function getChar()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+--==================================================
+-- RAYFIELD TOGGLE (ASSUME Window & MainTab EXIST)
 --==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
-    Name = "Auto Find Egg + Sell (Smart)",
+    Name = "Auto Find Egg + Sell [Tween]",
     CurrentValue = false,
-    Flag = "AutoFindSell",
+    Flag = "AutoEggSell",
     Callback = function() end
 })
 
 --==================================================
--- EGG PRIORITY LIST (INCHANGÉE)
+-- EGG PRIORITY LIST (TA LISTE, ORDRE = PRIORITÉ)
 --==================================================
 local EggPriority = {
     "Malware","Quantum","ERR0R","Shiny Quantum","Shiny Golden","Shiny Blueberregg",
@@ -101,50 +112,33 @@ for i, v in ipairs(EggPriority) do
 end
 
 --==================================================
--- UTILS
+-- TWEEN WALK (REMPLACE TP / PATHFINDING)
 --==================================================
-local function getChar()
-    return player.Character or player.CharacterAdded:Wait()
-end
+local function tweenWalkTo(humanoid, hrp, destination)
+    if not destination then return end
 
-local function getEggPart(egg)
-    if egg:IsA("Model") then
-        return egg.PrimaryPart
-            or egg:FindFirstChildWhichIsA("BasePart", true)
-            or egg:FindFirstChildWhichIsA("MeshPart", true)
-    elseif egg:IsA("BasePart") or egg:IsA("MeshPart") then
-        return egg
+    humanoid.AutoRotate = true
+    local speed = humanoid.WalkSpeed
+    local stepTime = 0.12
+
+    while AutoIndexToggle.CurrentValue
+        and (hrp.Position - destination).Magnitude > 5 do
+
+        local dir = (destination - hrp.Position)
+        if dir.Magnitude < 1 then break end
+
+        humanoid:Move(dir.Unit, false)
+
+        local step = dir.Unit * math.min(dir.Magnitude, speed * stepTime)
+        local tween = TweenService:Create(
+            hrp,
+            TweenInfo.new(stepTime, Enum.EasingStyle.Linear),
+            { CFrame = CFrame.new(hrp.Position + step, destination) }
+        )
+
+        tween:Play()
+        tween.Completed:Wait()
     end
-end
-
---==================================================
--- SMART PATH MOVE (FORCE CONTINUE)
---==================================================
-local function smartMove(humanoid, hrp, destination, cancelCheck)
-    local path = PathfindingService:CreatePath({
-        AgentRadius = 2,
-        AgentHeight = 5,
-        AgentCanJump = true,
-        AgentJumpHeight = 7,
-        AgentMaxSlope = 45
-    })
-
-    path:ComputeAsync(hrp.Position, destination)
-    if path.Status ~= Enum.PathStatus.Success then return false end
-
-    for _, wp in ipairs(path:GetWaypoints()) do
-        if not AutoIndexToggle.CurrentValue then return false end
-        if cancelCheck and cancelCheck() then return false end
-
-        humanoid:MoveTo(wp.Position)
-        if wp.Action == Enum.PathWaypointAction.Jump then
-            humanoid.Jump = true
-        end
-
-        humanoid.MoveToFinished:Wait(1.5)
-    end
-
-    return true
 end
 
 --==================================================
@@ -162,50 +156,48 @@ task.spawn(function()
         local hrp = char:WaitForChild("HumanoidRootPart")
 
         local eggsFolder = workspace:FindFirstChild("Eggs")
-        if not eggsFolder then task.wait(0.3) continue end
+        if not eggsFolder then task.wait(0.2) continue end
 
-        -- 🔍 FIND BEST PRIORITY EGG
-        local target, bestPrio = nil, math.huge
+        -- 🔎 choisir l’egg le plus prioritaire ACTUEL
+        local target, bestPrio
         for _, egg in ipairs(eggsFolder:GetChildren()) do
             local p = AllowedEggs[egg.Name]
-            if p and p < bestPrio then
+            if p and (not bestPrio or p < bestPrio) then
                 target, bestPrio = egg, p
             end
         end
+        if not target then task.wait(0.2) continue end
 
-        if not target then task.wait(0.3) continue end
+        -- 🧱 trouver la part réelle
+        local eggPart =
+            target:IsA("Model")
+            and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true))
+            or target
 
-        local eggPart = getEggPart(target)
         local clickDetector = target:FindFirstChildWhichIsA("ClickDetector", true)
-        if not (eggPart and clickDetector) then task.wait(0.3) continue end
+        if not (eggPart and clickDetector) then task.wait(0.2) continue end
 
-        -- 🧭 WALK TO EGG (RECALC IF BETTER EGG APPEARS)
-        local aborted = not smartMove(humanoid, hrp, eggPart.Position, function()
-            if not target.Parent then return true end
-            for _, e in ipairs(eggsFolder:GetChildren()) do
-                local p = AllowedEggs[e.Name]
-                if p and p < bestPrio then
-                    return true -- better egg found
-                end
-            end
-        end)
+        -- 🚶‍♂️ marcher vers l’egg
+        tweenWalkTo(humanoid, hrp, eggPart.Position)
 
-        if aborted or not target.Parent then continue end
+        if not (AutoIndexToggle.CurrentValue and target.Parent) then
+            continue
+        end
 
-        -- 🖱️ CLICK EGG
+        -- 🖱️ click egg
         fireclickdetector(clickDetector)
         task.wait(0.2)
 
-        -- 🧭 WALK TO MACHINE
+        -- 🏭 aller à la machine
         local crusher = workspace.Map.Crusher.Hitbox
-        local prompt = crusher:FindFirstChildOfClass("ProximityPrompt")
+        local prompt = crusher:FindFirstChildWhichIsA("ProximityPrompt", true)
         if not prompt then continue end
 
-        smartMove(humanoid, hrp, crusher.Position)
+        tweenWalkTo(humanoid, hrp, crusher.Position)
 
-        -- 🧲 STOP AT 5 STUDS + SPAM PROMPT
+        -- 🔁 spam prompt
         while AutoIndexToggle.CurrentValue
-            and (hrp.Position - crusher.Position).Magnitude <= 5 do
+            and (hrp.Position - crusher.Position).Magnitude <= 7 do
             pcall(function()
                 fireproximityprompt(prompt)
             end)
