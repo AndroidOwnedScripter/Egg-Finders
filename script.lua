@@ -450,7 +450,6 @@ end)
 -- SERVICES
 --==================================================
 local Players = game:GetService("Players")
-local PathfindingService = game:GetService("PathfindingService")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
@@ -459,12 +458,12 @@ local function getChar()
 end
 
 --==================================================
--- TOGGLE EGG PATH VISUEL
+-- TOGGLE EGG ESP
 --==================================================
 local VisualEggToggle = MainTab:CreateToggle({
-    Name = "Visual Egg Path",
+    Name = "Visual Egg ESP",
     CurrentValue = false,
-    Flag = "VisualEggPath",
+    Flag = "VisualEggESP",
     Callback = function() end
 })
 
@@ -494,7 +493,7 @@ for i,v in ipairs(EggPriority) do
 end
 
 --==================================================
--- FONCTIONS PATH VISUEL
+-- FONCTIONS ESP
 --==================================================
 local currentLines = {}
 
@@ -518,28 +517,36 @@ local function createLine(fromPos, toPos)
     line.CanCollide = false
     line.Material = Enum.Material.Neon
     line.Color = Color3.fromRGB(255,0,0)
-    line.Size = Vector3.new(0.2,0.2,(fromPos - toPos).Magnitude)
+    line.Size = Vector3.new(0.1,0.1,(fromPos - toPos).Magnitude)
     line.CFrame = CFrame.new((fromPos + toPos)/2, toPos) * CFrame.new(0,0,-line.Size.Z/2)
     line.Parent = workspace
     return line
 end
 
-local function visualizePath(hrp, targetPos)
-    -- Crée juste un trait direct vers l’egg
-    return { createLine(hrp.Position + Vector3.new(0,2,0), targetPos + Vector3.new(0,2,0)) }
+local function updateESP(hrp, targetPart)
+    -- Supprime ancien trait
+    for _, line in ipairs(currentLines) do
+        if line and line.Parent then line:Destroy() end
+    end
+    currentLines = {}
+
+    if targetPart then
+        -- Crée un trait direct du joueur à l’egg
+        currentLines = { createLine(hrp.Position + Vector3.new(0,2,0), targetPart.Position + Vector3.new(0,2,0)) }
+    end
 end
 
 --==================================================
--- LOOP PRINCIPAL VISUEL
+-- LOOP PRINCIPAL ESP
 --==================================================
 task.spawn(function()
     while true do
+        task.wait(0.1)
         if not VisualEggToggle.CurrentValue then
             for _, line in ipairs(currentLines) do
                 if line and line.Parent then line:Destroy() end
             end
             currentLines = {}
-            task.wait(0.2)
             continue
         end
 
@@ -547,27 +554,7 @@ task.spawn(function()
         local hrp = char:WaitForChild("HumanoidRootPart")
 
         local target = findTopEgg()
-        if not target then
-            for _, line in ipairs(currentLines) do
-                if line and line.Parent then line:Destroy() end
-            end
-            currentLines = {}
-            task.wait(0.3)
-            continue
-        end
-
-        local eggPart = target:IsA("Model") and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true)) or target
-        if not eggPart then task.wait(0.2) continue end
-
-        -- Supprime ancien chemin
-        for _, line in ipairs(currentLines) do
-            if line and line.Parent then line:Destroy() end
-        end
-        currentLines = {}
-
-        -- Crée un nouveau chemin visuel
-        currentLines = visualizePath(hrp, eggPart.Position)
-
-        task.wait(0.2)
+        local targetPart = target and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true))
+        updateESP(hrp, targetPart)
     end
 end)
