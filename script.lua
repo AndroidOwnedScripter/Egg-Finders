@@ -452,17 +452,17 @@ end)
 local Players = game:GetService("Players")
 local PathfindingService = game:GetService("PathfindingService")
 local RunService = game:GetService("RunService")
-
 local player = Players.LocalPlayer
+
 local function getChar()
     return player.Character or player.CharacterAdded:Wait()
 end
 
 --==================================================
--- TOGGLE FLECHES INDICATION D'OEUFS
+-- TOGGLE EGG PATH VISUEL
 --==================================================
-local VisualPathToggle = MainTab:CreateToggle({
-    Name = "Egg indication",
+local VisualEggToggle = MainTab:CreateToggle({
+    Name = "Visual Egg Path",
     CurrentValue = false,
     Flag = "VisualEggPath",
     Callback = function() end
@@ -494,8 +494,10 @@ for i,v in ipairs(EggPriority) do
 end
 
 --==================================================
--- FONCTIONS PATHFINDING VISUEL
+-- FONCTIONS PATH VISUEL
 --==================================================
+local currentLines = {}
+
 local function findTopEgg()
     local eggsFolder = workspace:FindFirstChild("Eggs")
     if not eggsFolder then return nil end
@@ -510,50 +512,33 @@ local function findTopEgg()
     return topEgg
 end
 
-local function createArrow(position)
-    local arrow = Instance.new("Part")
-    arrow.Size = Vector3.new(0.5,0.5,0.5)
-    arrow.Anchored = true
-    arrow.CanCollide = false
-    arrow.Material = Enum.Material.Neon
-    arrow.Color = Color3.fromRGB(255,0,0)
-    arrow.CFrame = CFrame.new(position)
-    arrow.Shape = Enum.PartType.Block
-    arrow.Parent = workspace
-    return arrow
+local function createLine(fromPos, toPos)
+    local line = Instance.new("Part")
+    line.Anchored = true
+    line.CanCollide = false
+    line.Material = Enum.Material.Neon
+    line.Color = Color3.fromRGB(255,0,0)
+    line.Size = Vector3.new(0.2,0.2,(fromPos - toPos).Magnitude)
+    line.CFrame = CFrame.new((fromPos + toPos)/2, toPos) * CFrame.new(0,0,-line.Size.Z/2)
+    line.Parent = workspace
+    return line
 end
 
 local function visualizePath(hrp, targetPos)
-    local path = PathfindingService:CreatePath({
-        AgentRadius = 2,
-        AgentHeight = 5,
-        AgentCanJump = true,
-        AgentJumpHeight = 7,
-        AgentMaxSlope = 45
-    })
-
-    path:ComputeAsync(hrp.Position, targetPos)
-    if path.Status ~= Enum.PathStatus.Success then return {} end
-
-    local arrows = {}
-    for _, wp in ipairs(path:GetWaypoints()) do
-        table.insert(arrows, createArrow(wp.Position + Vector3.new(0,1,0)))
-    end
-    return arrows
+    -- Crée juste un trait direct vers l’egg
+    return { createLine(hrp.Position + Vector3.new(0,2,0), targetPos + Vector3.new(0,2,0)) }
 end
 
 --==================================================
--- LOOP PRINCIPAL VISUAL PATH
+-- LOOP PRINCIPAL VISUEL
 --==================================================
-local currentArrows = {}
 task.spawn(function()
     while true do
-        if not VisualPathToggle.CurrentValue then
-            -- Supprimer les flèches si toggle off
-            for _, arrow in ipairs(currentArrows) do
-                if arrow and arrow.Parent then arrow:Destroy() end
+        if not VisualEggToggle.CurrentValue then
+            for _, line in ipairs(currentLines) do
+                if line and line.Parent then line:Destroy() end
             end
-            currentArrows = {}
+            currentLines = {}
             task.wait(0.2)
             continue
         end
@@ -561,33 +546,28 @@ task.spawn(function()
         local char = getChar()
         local hrp = char:WaitForChild("HumanoidRootPart")
 
-        -- 🥚 chercher l’œuf prioritaire
         local target = findTopEgg()
         if not target then
-            -- Supprimer les flèches si aucun œuf
-            for _, arrow in ipairs(currentArrows) do
-                if arrow and arrow.Parent then arrow:Destroy() end
+            for _, line in ipairs(currentLines) do
+                if line and line.Parent then line:Destroy() end
             end
-            currentArrows = {}
+            currentLines = {}
             task.wait(0.3)
             continue
         end
 
-        local eggPart =
-            target:IsA("Model")
-            and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true))
-            or target
+        local eggPart = target:IsA("Model") and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true)) or target
         if not eggPart then task.wait(0.2) continue end
 
-        -- supprimer anciennes flèches
-        for _, arrow in ipairs(currentArrows) do
-            if arrow and arrow.Parent then arrow:Destroy() end
+        -- Supprime ancien chemin
+        for _, line in ipairs(currentLines) do
+            if line and line.Parent then line:Destroy() end
         end
-        currentArrows = {}
+        currentLines = {}
 
-        -- créer nouveau chemin visuel
-        currentArrows = visualizePath(hrp, eggPart.Position)
+        -- Crée un nouveau chemin visuel
+        currentLines = visualizePath(hrp, eggPart.Position)
 
-        task.wait(0.2) -- petite pause avant recalcul
+        task.wait(0.2)
     end
 end)
