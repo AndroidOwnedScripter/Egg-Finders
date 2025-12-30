@@ -67,6 +67,7 @@ local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local noclipConn
+local activeTween
 
 local function getChar()
     return player.Character or player.CharacterAdded:Wait()
@@ -86,20 +87,17 @@ local SantaBypassToggle = EventTab:CreateToggle({
 
         if state then
             ------------------------------------------------
-            -- NOCLIP
+            -- NOCLIP (SAFE)
             ------------------------------------------------
-            noclipConn = RunService.Stepped:Connect(function()
-                for _, part in ipairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
+            if not noclipConn then
+                noclipConn = RunService.Stepped:Connect(function()
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
                     end
-                end
-            end)
-
-            ------------------------------------------------
-            -- SWIM MODE
-            ------------------------------------------------
-            humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+                end)
+            end
 
             ------------------------------------------------
             -- DELETE OBJECT (workspace.Eggs)
@@ -115,7 +113,7 @@ local SantaBypassToggle = EventTab:CreateToggle({
             end)
 
             ------------------------------------------------
-            -- TWEEN TO SANTA
+            -- TWEEN TO SANTA (NORMAL, NO STATE CHANGE)
             ------------------------------------------------
             local santaFolder = workspace:FindFirstChild("NPCs")
             local santa = santaFolder and santaFolder:FindFirstChild("Santa")
@@ -127,28 +125,41 @@ local SantaBypassToggle = EventTab:CreateToggle({
                     or santa
 
                 if santaPart then
-                    local tween = TweenService:Create(
+                    if activeTween then
+                        activeTween:Cancel()
+                        activeTween = nil
+                    end
+
+                    local distance = (hrp.Position - santaPart.Position).Magnitude
+                    local tweenTime = math.clamp(distance / 25, 0.3, 5)
+
+                    activeTween = TweenService:Create(
                         hrp,
                         TweenInfo.new(
-                            (hrp.Position - santaPart.Position).Magnitude / 20,
-                            Enum.EasingStyle.Linear
+                            tweenTime,
+                            Enum.EasingStyle.Linear,
+                            Enum.EasingDirection.Out
                         ),
                         { CFrame = santaPart.CFrame * CFrame.new(0, 0, -3) }
                     )
-                    tween:Play()
+
+                    activeTween:Play()
                 end
             end
 
         else
             ------------------------------------------------
-            -- DISABLE
+            -- DISABLE CLEAN
             ------------------------------------------------
             if noclipConn then
                 noclipConn:Disconnect()
                 noclipConn = nil
             end
 
-            humanoid:ChangeState(Enum.HumanoidStateType.Running)
+            if activeTween then
+                activeTween:Cancel()
+                activeTween = nil
+            end
         end
     end
 })
