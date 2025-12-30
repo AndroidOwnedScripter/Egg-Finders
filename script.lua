@@ -493,10 +493,8 @@ for i,v in ipairs(EggPriority) do
 end
 
 --==================================================
--- FONCTIONS ESP
+-- FIND TOP EGG
 --==================================================
-local currentBeam
-
 local function findTopEgg()
     local eggsFolder = workspace:FindFirstChild("Eggs")
     if not eggsFolder then return nil end
@@ -511,72 +509,53 @@ local function findTopEgg()
     return topEgg
 end
 
-local function createBeam(hrp, targetPart)
-    if not hrp or not targetPart then return nil end
-
-    -- Créer un part invisible pour contenir le Beam
-    local beamPart = Instance.new("Part")
-    beamPart.Transparency = 1
-    beamPart.Anchored = true
-    beamPart.CanCollide = false
-    beamPart.Size = Vector3.new(1,1,1)
-    beamPart.CFrame = CFrame.new(hrp.Position)
-    beamPart.Parent = workspace
-
-    local att0 = Instance.new("Attachment", hrp)
-    local att1 = Instance.new("Attachment", targetPart)
-
-    local beam = Instance.new("Beam")
-    beam.Attachment0 = att0
-    beam.Attachment1 = att1
-    beam.FaceCamera = true
-    beam.Color = ColorSequence.new(Color3.fromRGB(255,0,0))
-    beam.Width0 = 0.2
-    beam.Width1 = 0.2
-    beam.LightEmission = 1
-    beam.Transparency = NumberSequence.new(0)
-    beam.Parent = beamPart
-
-    return {beam = beam, att0 = att0, att1 = att1, parentPart = beamPart}
-end
-
-local function updateESP(hrp, targetPart)
-    -- Supprime l'ancien Beam
-    if currentBeam then
-        if currentBeam.beam then currentBeam.beam:Destroy() end
-        if currentBeam.att0 then currentBeam.att0:Destroy() end
-        if currentBeam.att1 then currentBeam.att1:Destroy() end
-        if currentBeam.parentPart then currentBeam.parentPart:Destroy() end
-        currentBeam = nil
-    end
-
-    if targetPart then
-        currentBeam = createBeam(hrp, targetPart)
-    end
-end
-
 --==================================================
--- LOOP PRINCIPAL ESP
+-- DRAWING ESP
 --==================================================
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        if not VisualEggToggle.CurrentValue then
-            if currentBeam then
-                if currentBeam.beam then currentBeam.beam:Destroy() end
-                if currentBeam.att0 then currentBeam.att0:Destroy() end
-                if currentBeam.att1 then currentBeam.att1:Destroy() end
-                if currentBeam.parentPart then currentBeam.parentPart:Destroy() end
-                currentBeam = nil
-            end
-            continue
+local lines = {}
+
+RunService.RenderStepped:Connect(function()
+    if not VisualEggToggle.CurrentValue then
+        for _, line in pairs(lines) do
+            line:Remove()
         end
+        lines = {}
+        return
+    end
 
-        local char = getChar()
-        local hrp = char:WaitForChild("HumanoidRootPart")
+    local char = getChar()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
 
-        local target = findTopEgg()
-        local targetPart = target and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true))
-        updateESP(hrp, targetPart)
+    local target = findTopEgg()
+    local targetPart = target and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart", true))
+    if not targetPart then
+        for _, line in pairs(lines) do
+            line:Remove()
+        end
+        lines = {}
+        return
+    end
+
+    -- Créer le line si il n’existe pas
+    if #lines == 0 then
+        local line = Drawing.new("Line")
+        line.Visible = true
+        line.Color = Color3.fromRGB(255,0,0)
+        line.Thickness = 2
+        lines[1] = line
+    end
+
+    -- Calculer positions à l’écran
+    local camera = workspace.CurrentCamera
+    local startPos, onScreenStart = camera:WorldToViewportPoint(hrp.Position)
+    local endPos, onScreenEnd = camera:WorldToViewportPoint(targetPart.Position)
+
+    if onScreenStart and onScreenEnd then
+        lines[1].From = Vector2.new(startPos.X, startPos.Y)
+        lines[1].To = Vector2.new(endPos.X, endPos.Y)
+        lines[1].Visible = true
+    else
+        lines[1].Visible = false
     end
 end)
