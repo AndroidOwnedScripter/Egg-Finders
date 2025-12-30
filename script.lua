@@ -73,7 +73,7 @@ local function getChar()
 end
 
 --==================================================
--- TOGGLE
+-- TOGGLE SANTA
 --==================================================
 local SantaBypassToggle = EventTab:CreateToggle({
     Name = "[🎅] Go To Santa",
@@ -172,7 +172,7 @@ local function getChar()
 end
 
 --==================================================
--- RAYFIELD TOGGLE (ASSUME Window & MainTab EXIST)
+-- Auto Sell Egg
 --==================================================
 local AutoIndexToggle = MainTab:CreateToggle({
     Name = "Auto Find Egg + Sell [Dynamic Pathfinding]",
