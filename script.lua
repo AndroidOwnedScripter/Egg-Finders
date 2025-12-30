@@ -514,21 +514,30 @@ end
 local function createBeam(hrp, targetPart)
     if not hrp or not targetPart then return nil end
 
-    local attachment0 = Instance.new("Attachment", hrp)
-    local attachment1 = Instance.new("Attachment", targetPart)
+    -- Créer un part invisible pour contenir le Beam
+    local beamPart = Instance.new("Part")
+    beamPart.Transparency = 1
+    beamPart.Anchored = true
+    beamPart.CanCollide = false
+    beamPart.Size = Vector3.new(1,1,1)
+    beamPart.CFrame = CFrame.new(hrp.Position)
+    beamPart.Parent = workspace
+
+    local att0 = Instance.new("Attachment", hrp)
+    local att1 = Instance.new("Attachment", targetPart)
 
     local beam = Instance.new("Beam")
-    beam.Attachment0 = attachment0
-    beam.Attachment1 = attachment1
+    beam.Attachment0 = att0
+    beam.Attachment1 = att1
     beam.FaceCamera = true
     beam.Color = ColorSequence.new(Color3.fromRGB(255,0,0))
     beam.Width0 = 0.2
     beam.Width1 = 0.2
     beam.LightEmission = 1
     beam.Transparency = NumberSequence.new(0)
-    beam.Parent = workspace
+    beam.Parent = beamPart
 
-    return {beam = beam, att0 = attachment0, att1 = attachment1}
+    return {beam = beam, att0 = att0, att1 = att1, parentPart = beamPart}
 end
 
 local function updateESP(hrp, targetPart)
@@ -537,6 +546,7 @@ local function updateESP(hrp, targetPart)
         if currentBeam.beam then currentBeam.beam:Destroy() end
         if currentBeam.att0 then currentBeam.att0:Destroy() end
         if currentBeam.att1 then currentBeam.att1:Destroy() end
+        if currentBeam.parentPart then currentBeam.parentPart:Destroy() end
         currentBeam = nil
     end
 
@@ -556,6 +566,7 @@ task.spawn(function()
                 if currentBeam.beam then currentBeam.beam:Destroy() end
                 if currentBeam.att0 then currentBeam.att0:Destroy() end
                 if currentBeam.att1 then currentBeam.att1:Destroy() end
+                if currentBeam.parentPart then currentBeam.parentPart:Destroy() end
                 currentBeam = nil
             end
             continue
