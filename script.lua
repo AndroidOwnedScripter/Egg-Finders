@@ -511,15 +511,18 @@ local function findTopEgg()
     return topEgg
 end
 
-local function createLine(fromPos, toPos)
+local function createESPLine(fromPos, toPos)
     local line = Instance.new("Part")
     line.Anchored = true
     line.CanCollide = false
     line.Material = Enum.Material.Neon
-    line.Color = Color3.fromRGB(255,0,0)
-    line.Size = Vector3.new(0.1,0.1,(fromPos - toPos).Magnitude)
-    line.CFrame = CFrame.new((fromPos + toPos)/2, toPos) * CFrame.new(0,0,-line.Size.Z/2)
+    line.Color = Color3.fromRGB(255,0,0) -- rouge
+    line.Size = Vector3.new(0.1, 0.1, (fromPos - toPos).Magnitude)
+    line.CFrame = CFrame.new((fromPos + toPos)/2, toPos) * CFrame.new(0, 0, -line.Size.Z/2)
     line.Parent = workspace
+
+    -- Permet de voir à travers les murs
+    line.LocalTransparencyModifier = 0
     return line
 end
 
@@ -531,8 +534,8 @@ local function updateESP(hrp, targetPart)
     currentLines = {}
 
     if targetPart then
-        -- Crée un trait direct du joueur à l’egg
-        currentLines = { createLine(hrp.Position + Vector3.new(0,2,0), targetPart.Position + Vector3.new(0,2,0)) }
+        -- Crée un trait rouge direct du joueur à l’egg
+        currentLines = { createESPLine(hrp.Position + Vector3.new(0,2,0), targetPart.Position + Vector3.new(0,2,0)) }
     end
 end
 
