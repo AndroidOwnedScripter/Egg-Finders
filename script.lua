@@ -495,7 +495,7 @@ end
 --==================================================
 -- FONCTIONS ESP
 --==================================================
-local currentLines = {}
+local currentBeam
 
 local function findTopEgg()
     local eggsFolder = workspace:FindFirstChild("Eggs")
@@ -511,31 +511,37 @@ local function findTopEgg()
     return topEgg
 end
 
-local function createESPLine(fromPos, toPos)
-    local line = Instance.new("Part")
-    line.Anchored = true
-    line.CanCollide = false
-    line.Material = Enum.Material.Neon
-    line.Color = Color3.fromRGB(255,0,0) -- rouge
-    line.Size = Vector3.new(0.1, 0.1, (fromPos - toPos).Magnitude)
-    line.CFrame = CFrame.new((fromPos + toPos)/2, toPos) * CFrame.new(0, 0, -line.Size.Z/2)
-    line.Parent = workspace
+local function createBeam(hrp, targetPart)
+    if not hrp or not targetPart then return nil end
 
-    -- Permet de voir à travers les murs
-    line.LocalTransparencyModifier = 0
-    return line
+    local attachment0 = Instance.new("Attachment", hrp)
+    local attachment1 = Instance.new("Attachment", targetPart)
+
+    local beam = Instance.new("Beam")
+    beam.Attachment0 = attachment0
+    beam.Attachment1 = attachment1
+    beam.FaceCamera = true
+    beam.Color = ColorSequence.new(Color3.fromRGB(255,0,0))
+    beam.Width0 = 0.2
+    beam.Width1 = 0.2
+    beam.LightEmission = 1
+    beam.Transparency = NumberSequence.new(0)
+    beam.Parent = workspace
+
+    return {beam = beam, att0 = attachment0, att1 = attachment1}
 end
 
 local function updateESP(hrp, targetPart)
-    -- Supprime ancien trait
-    for _, line in ipairs(currentLines) do
-        if line and line.Parent then line:Destroy() end
+    -- Supprime l'ancien Beam
+    if currentBeam then
+        if currentBeam.beam then currentBeam.beam:Destroy() end
+        if currentBeam.att0 then currentBeam.att0:Destroy() end
+        if currentBeam.att1 then currentBeam.att1:Destroy() end
+        currentBeam = nil
     end
-    currentLines = {}
 
     if targetPart then
-        -- Crée un trait rouge direct du joueur à l’egg
-        currentLines = { createESPLine(hrp.Position + Vector3.new(0,2,0), targetPart.Position + Vector3.new(0,2,0)) }
+        currentBeam = createBeam(hrp, targetPart)
     end
 end
 
@@ -546,10 +552,12 @@ task.spawn(function()
     while true do
         task.wait(0.1)
         if not VisualEggToggle.CurrentValue then
-            for _, line in ipairs(currentLines) do
-                if line and line.Parent then line:Destroy() end
+            if currentBeam then
+                if currentBeam.beam then currentBeam.beam:Destroy() end
+                if currentBeam.att0 then currentBeam.att0:Destroy() end
+                if currentBeam.att1 then currentBeam.att1:Destroy() end
+                currentBeam = nil
             end
-            currentLines = {}
             continue
         end
 
